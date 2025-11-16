@@ -21,6 +21,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListCellRenderer;
+import java.awt.Graphics;
 
 import com.skhu.tips.model.entity.Building;
 import com.skhu.tips.model.entity.Facility;
@@ -55,6 +56,9 @@ public class MainLeftPanel extends JPanel {
         loadIcons();
         initializeComponents();
         setupLayout();
+        
+        // 초기 상태 설정: 건물 리스트를 기본으로 표시
+        updateButtonColors(true);
     }
 
     // =======================================================================
@@ -142,6 +146,10 @@ public class MainLeftPanel extends JPanel {
         buildingList = new JList<>(buildingModel);
         facilityList = new JList<>(facilityModel);
 
+        // 리스트 선택 모드 설정 (단일 선택)
+        buildingList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        facilityList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+
         buildingList.setCellRenderer(new ButtonListCellRenderer<>(true));
         facilityList.setCellRenderer(new ButtonListCellRenderer<>(false));
 
@@ -171,16 +179,39 @@ public class MainLeftPanel extends JPanel {
      * @brief 카테고리 버튼을 생성하고 스타일을 적용합니다.
      */
     private JButton createCategoryButton(boolean isBuilding) {
-        JButton button = new JButton();
+        JButton button = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                int width = getWidth();
+                int height = getHeight();
+                int arc = 15; // 둥근 모서리 크기
+                
+                // 둥근 사각형 배경 그리기
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, width, height, arc, arc);
+                
+                // 검은색 테두리 그리기
+                g2.setColor(Color.BLACK);
+                g2.setStroke(new java.awt.BasicStroke(2)); // 테두리 두께
+                g2.drawRoundRect(1, 1, width - 2, height - 2, arc, arc);
+                
+                // 아이콘과 텍스트 그리기
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
 
         ImageIcon buttonIcon = resizeIconForButton(isBuilding ? buildingIcon : facilityIcon, 32);
         button.setIcon(buttonIcon);
 
         button.setBackground(isBuilding ? buildingColor : facilityColor);
-        button.setOpaque(true);
-        button.setBorderPainted(true);
+        button.setOpaque(false); // paintComponent에서 직접 그리므로 false
+        button.setBorderPainted(false);
         button.setFocusPainted(false);
-        button.setContentAreaFilled(true);
+        button.setContentAreaFilled(false);
         button.setPreferredSize(new Dimension(150, 60));
 
         return button;
@@ -190,13 +221,13 @@ public class MainLeftPanel extends JPanel {
      * @brief 원본 아이콘을 지정된 크기로 안전하게 리사이즈합니다.
      */
     private ImageIcon resizeIconForButton(ImageIcon originalIcon, int size) {
-        if (originalIcon == null) {
-			return new ImageIcon();
-		}
+        if (originalIcon == null || originalIcon.getIconWidth() == 0) {
+            return new ImageIcon();
+        }
         Image img = originalIcon.getImage();
         if (img == null) {
-			return new ImageIcon();
-		}
+            return new ImageIcon();
+        }
         Image resizedImg = img.getScaledInstance(size, size, Image.SCALE_SMOOTH);
         return new ImageIcon(resizedImg);
     }
