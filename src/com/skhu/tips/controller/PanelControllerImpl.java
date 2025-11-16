@@ -67,24 +67,6 @@ public class PanelControllerImpl implements PanelController {
     }
 
     /**
-     * @brief [MapController 호출] 건물 상세 정보 팝업창을 엽니다.
-     */
-    @Override
-    public void openBuildingDetail(Building building) {
-        // TODO: (구현 필요) new BuildingDetailPanel(building).setVisible(true);
-        System.out.println("[PanelController] " + building.getName() + " 팝업 열기 요청 받음");
-    }
-
-    /**
-     * @brief [MapController 호출] 시설 상세 정보 팝업창을 엽니다.
-     */
-    @Override
-    public void openFacilityDetail(Facility facility) {
-        // TODO: (구현 필요) new FacilityDetailPanel(facility).setVisible(true);
-        System.out.println("[PanelController] " + facility.getName() + " 팝업 열기 요청 받음");
-    }
-
-    /**
      * @brief [MapController 호출] 뷰를 건물 리스트 뷰로 전환합니다.
      */
     @Override
@@ -172,24 +154,9 @@ public class PanelControllerImpl implements PanelController {
         mainLeftPanel.getFacilityButton().addActionListener(e -> switchToFacilityView());
     }
 
-    // --- PanelController 인터페이스 구현 ---
-
-    @Override
-    public void switchToBuildingView() {
-        mainLeftPanel.switchToBuildingView();
-        if (mapController != null) {
-            mapController.switchToBuildingView();
-        }
-    }
-
-    @Override
-    public void switchToFacilityView() {
-        mainLeftPanel.switchToFacilityView();
-        if (mapController != null) {
-            mapController.switchToFacilityView();
-        }
-    }
-
+    /**
+     * @brief [MapController 호출] 건물 상세 정보 팝업창을 엽니다.
+     */
     @Override
     public void openBuildingDetail(Building building) {
         if (building == null) {
@@ -258,10 +225,5 @@ public class PanelControllerImpl implements PanelController {
         }
         
         facilityDialog.setVisible(true);
-    }
-
-    @Override
-    public void setMapController(MapController mapController) {
-        this.mapController = mapController;
     }
 }
