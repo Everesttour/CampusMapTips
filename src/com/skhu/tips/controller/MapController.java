@@ -44,4 +44,14 @@ public interface MapController {
      * 모든 의존성 설정이 완료된 후 호출되어, 실제 데이터를 뷰에 뿌립니다.
      */
     void loadInitialData();
+
+    /**
+     * @brief 지도에서 건물이 클릭되었을 때 호출됩니다.
+     */
+    void onBuildingClicked(Building building);
+
+    /**
+     * @brief 지도에서 시설이 클릭되었을 때 호출됩니다.
+     */
+    void onFacilityClicked(Facility facility);
 }
