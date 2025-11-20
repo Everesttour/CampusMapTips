@@ -7,7 +7,7 @@ import com.skhu.tips.view.map.MapPanel;
 
 /**
  * @class MapControllerImpl
- * @brief MapController 구현체. 2단계 초기화 패턴 적용.
+ * @brief MapController 구현체. Null 체크 제거 버전.
  */
 public class MapControllerImpl implements MapController {
 
@@ -16,58 +16,69 @@ public class MapControllerImpl implements MapController {
     private PanelController panelController;
 
     // =======================================================================
-    // --- 1. Configuration & Initialization (초기화 로직 분리) ---
+    // --- 1. Configuration & Initialization ---
     // =======================================================================
 
-    /**
-     * @brief [Step 1] 의존성 주입 (Wiring)
-     * 단순히 객체 주소를 변수에 저장하기만 합니다. 절대 충돌이 나지 않습니다.
-     */
     @Override
     public void configure(MapPanel mapPanel, DataService dataService, PanelController panelController) {
         this.mapPanel = mapPanel;
         this.dataService = dataService;
         this.panelController = panelController;
+
+        // 컨트롤러 등록 (체크 없이 바로 호출)
+        this.mapPanel.setupController(this);
     }
 
-    /**
-     * @brief [Step 2] 초기 데이터 로딩 (Logic)
-     * Main에서 모든 설정이 끝난 뒤 호출하므로, 안전하게 다른 객체를 사용할 수 있습니다.
-     */
     @Override
     public void loadInitialData() {
-        if (this.mapPanel != null && this.dataService != null) {
-            System.out.println("[MapController] 초기 데이터 로딩 시작...");
-            this.mapPanel.setMapData(
-                dataService.getBuildings(),
-                dataService.getFacilities()
-            );
-        }
+        System.out.println("[MapController] 초기 데이터 로딩 시작...");
+
+        // 데이터 로딩 (체크 없이 바로 호출)
+        this.mapPanel.setMapData(
+            dataService.getBuildings(),
+            dataService.getFacilities()
+        );
     }
 
     // =======================================================================
-    // --- 2. Business Logic ---
+    // --- 2. Event Handling ---
+    // =======================================================================
+
+    @Override
+    public void onBuildingClicked(Building building) {
+        System.out.println("[MapController] 건물 클릭됨: " + building.getName());
+        // 체크 없이 바로 호출
+        panelController.openBuildingDetail(building);
+    }
+
+    @Override
+    public void onFacilityClicked(Facility facility) {
+        System.out.println("[MapController] 시설 클릭됨: " + facility.getName());
+        // 체크 없이 바로 호출
+        panelController.openFacilityDetail(facility);
+    }
+
+    // =======================================================================
+    // --- 3. Business Logic ---
     // =======================================================================
 
     @Override
     public void focusOn(Building building) {
-        System.out.println("[MapController] Focus on Building: " + building.getName());
-        // TODO: 나중에 MapPanel에 이동 명령 내리기
+        // TODO
     }
 
     @Override
     public void focusOn(Facility facility) {
-        System.out.println("[MapController] Focus on Facility: " + facility.getName());
-        // TODO: 나중에 MapPanel에 이동 명령 내리기
+        // TODO
     }
 
     @Override
     public void switchToBuildingView() {
-        // TODO: 뷰 모드 전환 로직
+        // TODO
     }
 
     @Override
     public void switchToFacilityView() {
-        // TODO: 뷰 모드 전환 로직
+        // TODO
     }
 }

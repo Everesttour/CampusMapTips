@@ -1,8 +1,8 @@
 [
   {
     "id": 101,
-    "xLocation": 126.959,
-    "yLocation": 37.557,
+    "xLocation": 317,
+    "yLocation": 725,
     "floor": 1,
     "name": "학생 식당 (학식)",
     "buildingName": "학생회관",
@@ -17,8 +17,8 @@
   },
   {
     "id": 102,
-    "xLocation": 126.962,
-    "yLocation": 37.558,
+    "xLocation": 436,
+    "yLocation": 704,
     "floor": 3,
     "name": "컴퓨터실 A",
     "buildingName": "공학관",
@@ -33,8 +33,8 @@
   },
   {
     "id": 103,
-    "xLocation": 126.961,
-    "yLocation": 37.559,
+    "xLocation": 393,
+    "yLocation": 613,
     "floor": 1,
     "name": "카페테리아 (도서관점)",
     "buildingName": "중앙도서관",
