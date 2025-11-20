@@ -38,8 +38,12 @@ public class Main {
 			MapController mapController = new MapControllerImpl();
 
             // 4. 뷰와 학교데이터와 생성된 컨트롤러 구현체끼리 서로의 인터페이스를 주입합니다.
-            panelController.initialize(mainLeftPanel, dataService, mapController);
-            mapController.initialize(mapPanel, dataService, panelController);
+            panelController.configure(mainLeftPanel, dataService, mapController);
+            mapController.configure(mapPanel, dataService, panelController);
+
+            // 5. 초기 데이터를 불러와 초기 로직을 실행합니다.
+            panelController.loadInitialData();
+            mapController.loadInitialData();
 
 			// 5. UI 조립 및 화면 출력
 			assembleAndLaunchUI(mainLeftPanel, mapPanel);
@@ -57,7 +61,7 @@ public class Main {
 		// 메인 프레임
 		JFrame frame = new JFrame("대학 꿀팁 지도");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(1200, 800);
+		frame.setSize(1450, 800);
 		frame.setLayout(new BorderLayout());
 
 		// 두 개의 뷰를 가로로 분할하는 JSplitPane 생성

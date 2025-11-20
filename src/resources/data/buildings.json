@@ -1,64 +1,96 @@
 [
   {
     "id": 1,
-    "xLocation": 126.960,
-    "yLocation": 37.558,
+    "xLocation": 836,
+    "yLocation": 444,
     "name": "본관",
     "description": "학교의 행정 업무를 총괄하는 중심 건물입니다.",
     "rooms": ["101호 총장실", "201호 행정실", "301호 회의실"]
   },
   {
     "id": 2,
-    "xLocation": 126.961,
-    "yLocation": 37.559,
+    "xLocation": 766,
+    "yLocation": 358,
     "name": "중앙도서관",
     "description": "24시간 열람실과 다양한 장서를 보유한 학교의 핵심 시설입니다.",
     "rooms": ["1층 일반열람실", "2층 자료실", "3층 그룹스터디룸"]
   },
   {
     "id": 3,
-    "xLocation": 126.959,
-    "yLocation": 37.557,
+    "xLocation": 988,
+    "yLocation": 388,
     "name": "학생회관",
     "description": "학생들의 휴식과 교류의 공간으로 다양한 편의시설이 있는 건물입니다.",
     "rooms": ["1층 학생식당", "2층 동아리방", "3층 학생회 사무실"]
   },
   {
-    "id": 4,
-    "xLocation": 126.962,
-    "yLocation": 37.558,
-    "name": "공학관",
-    "description": "공과대학 학생들의 실습과 강의가 이루어지는 건물입니다.",
-    "rooms": ["101호 실습실A", "201호 강의실B", "301호 컴퓨터실"]
-  },
-  {
     "id": 5,
-    "xLocation": 126.958,
-    "yLocation": 37.558,
+    "xLocation": 796,
+    "yLocation": 792,
     "name": "체육관",
     "description": "다양한 체육 시설과 수영장을 갖춘 종합 체육 시설입니다.",
     "rooms": ["1층 수영장", "2층 헬스장", "3층 농구장"]
   },
   {
     "id": 6,
-    "xLocation": 126.957,
-    "yLocation": 37.559,
+    "xLocation": 968,
+    "yLocation": 248,
     "name": "기숙사",
     "description": "재학생들을 위한 기숙사 시설로 생활관과 식당이 있습니다.",
     "rooms": ["1층 식당", "2층-5층 생활관"]
   },
   {
     "id": 7,
-    "xLocation": 126.960,
-    "yLocation": 37.556,
+    "xLocation": 306,
+    "yLocation": 569,
     "name": "예술관",
     "description": "음악과 미술 관련 전공 학생들의 전용 공간입니다.",
     "rooms": ["1층 전시실", "2층 연습실", "3층 작업실"]
   },
   {
     "id": 8,
-    "xLocation": 126.961,
-    "yLocation": 37.557,
+    "xLocation": 418,
+    "yLocation": 465,
+    "name": "강의동 A",
+    "description": "일반 강의실과 대형 강의실이 있는 건물입니다.",
+    "rooms": ["101호 대형강의실", "201호 중형강의실", "301호 소형강의실"]
+  },
+    {
+    "id": 9,
+    "xLocation": 551,
+    "yLocation": 442,
+    "name": "강의동 A",
+    "description": "일반 강의실과 대형 강의실이 있는 건물입니다.",
+    "rooms": ["101호 대형강의실", "201호 중형강의실", "301호 소형강의실"]
+  },  
+  {
+    "id": 10,
+    "xLocation": 234,
+    "yLocation": 842,
+    "name": "강의동 A",
+    "description": "일반 강의실과 대형 강의실이 있는 건물입니다.",
+    "rooms": ["101호 대형강의실", "201호 중형강의실", "301호 소형강의실"]
+  },
+  {
+    "id": 11,
+    "xLocation": 770,
+    "yLocation": 189,
+    "name": "강의동 A",
+    "description": "일반 강의실과 대형 강의실이 있는 건물입니다.",
+    "rooms": ["101호 대형강의실", "201호 중형강의실", "301호 소형강의실"]
+  },
+  {
+    "id": 12,
+    "xLocation": 1392,
+    "yLocation": 407,
+    "name": "강의동 A",
+    "description": "일반 강의실과 대형 강의실이 있는 건물입니다.",
+    "rooms": ["101호 대형강의실", "201호 중형강의실", "301호 소형강의실"]
+  },
+  {
+    "id": 13,
+    "xLocation": 1141,
+    "yLocation": 233,
     "name": "강의동 A",
     "description": "일반 강의실과 대형 강의실이 있는 건물입니다.",
     "rooms": ["101호 대형강의실", "201호 중형강의실", "301호 소형강의실"]

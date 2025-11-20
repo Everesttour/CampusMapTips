@@ -34,9 +34,14 @@ public interface MapController {
     // --- [요청사항 반영] DI를 위한 Setter ---
 
     /**
-     * @brief MapController가 PanelController의 기능을 호출할 수 있도록
-     * PanelController 인터페이스를 주입받습니다. (Setter DI)
-     * @param panelController PanelController의 인터페이스
+     * @brief 1단계: 의존성 주입 (Wiring)
+     * 필요한 객체들을 멤버 변수에 할당만 합니다. 로직 실행은 하지 않습니다.
      */
-    void initialize(MapPanel mapPanel, DataService dataService, PanelController panelController);
+    void configure(MapPanel mapPanel, DataService dataService, PanelController panelController);
+
+    /**
+     * @brief 2단계: 초기 데이터 로딩 (Logic)
+     * 모든 의존성 설정이 완료된 후 호출되어, 실제 데이터를 뷰에 뿌립니다.
+     */
+    void loadInitialData();
 }
