@@ -57,7 +57,7 @@ public class Main {
 		// 메인 프레임
 		JFrame frame = new JFrame("대학 꿀팁 지도");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(1200, 800);
+		frame.setSize(1450, 800);
 		frame.setLayout(new BorderLayout());
 
 		// 두 개의 뷰를 가로로 분할하는 JSplitPane 생성
