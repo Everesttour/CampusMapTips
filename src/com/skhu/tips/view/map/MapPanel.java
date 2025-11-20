@@ -34,7 +34,7 @@ public class MapPanel extends JPanel {
     // =======================================================================
 
     private static final String MAP_IMAGE_PATH = "src/resources/images/map/campus_map.jpg";
-    private static final double FACILITY_VISIBLE_THRESHOLD = 1.3;
+    private static final double FACILITY_VISIBLE_THRESHOLD = 1.05;
 
     // UI 컴포넌트
     private JLabel mapLabel;
