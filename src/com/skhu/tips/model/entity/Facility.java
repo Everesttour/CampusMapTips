@@ -9,7 +9,7 @@ public class Facility {
     private int floor;
     private String name;
     private String buildingName;
-    private String Overview;
+    private String overview;
     private String description;
     private String notice;
     private String operatingHours;
@@ -26,7 +26,7 @@ public class Facility {
 		this.floor = floor;
 		this.name = name;
 		this.buildingName = buildingName;
-		Overview = overview;
+		this.overview = overview;
 		this.description = description;
 		this.notice = notice;
 		this.operatingHours = operatingHours;
@@ -82,11 +82,11 @@ public class Facility {
 	}
 
 	public String getOverview() {
-		return Overview;
+		return overview;
 	}
 
 	public void setOverview(String overview) {
-		Overview = overview;
+		this.overview = overview;
 	}
 
 	public String getDescription() {
