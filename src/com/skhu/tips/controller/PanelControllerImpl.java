@@ -20,24 +20,30 @@ import com.skhu.tips.view.panel.MainLeftPanel;
 public class PanelControllerImpl implements PanelController {
 
     // --- 1. Fields (DI 및 상태) ---
-    private final MainLeftPanel mainLeftPanel;
-    private final DataService dataService;
+    private MainLeftPanel mainLeftPanel;
+    private DataService dataService;
     private MapController mapController;
-    
+
     // 디테일 패널들
     private BuildingDetailPanel buildingDetailPanel;
     private FacilityDetailPanel facilityDetailPanel;
-    
+
     // 디테일 다이얼로그들
     private JDialog buildingDialog;
     private JDialog facilityDialog;
 
+    // =======================================================================
+    // --- 2. PanelController Interface Implementation (외부 노출 API) ---
+    // =======================================================================
+
     /**
-     * @brief 생성자: DI 및 초기 설정
+     * @brief 시스템 시작 후 처음에 실행되어 외부 클래스들을 주입받아 컨트롤러를 구성
      */
-    public PanelControllerImpl(MainLeftPanel mainLeftPanel, DataService dataService) {
+    @Override
+    public void initialize(MainLeftPanel mainLeftPanel, DataService dataService, MapController mapController) {
         this.mainLeftPanel = mainLeftPanel;
         this.dataService = dataService;
+        this.mapController = mapController;
 
         // 1. 디테일 패널 초기화
         buildingDetailPanel = new BuildingDetailPanel();
@@ -52,18 +58,6 @@ public class PanelControllerImpl implements PanelController {
 
         // 초기 뷰 상태 설정
         showBuildingView();
-    }
-
-    // =======================================================================
-    // --- 2. PanelController Interface Implementation (외부 노출 API) ---
-    // =======================================================================
-
-    /**
-     * @brief [DI Setter] MapController 인터페이스를 주입받습니다.
-     */
-    @Override
-    public void setMapController(MapController mapController) {
-        this.mapController = mapController;
     }
 
     /**
@@ -163,23 +157,23 @@ public class PanelControllerImpl implements PanelController {
             System.out.println("openBuildingDetail: building이 null입니다."); // 디버깅용
             return;
         }
-        
+
         System.out.println("openBuildingDetail 호출됨: " + building.getName()); // 디버깅용
-        
+
         // 패널에 건물 정보 표시
         buildingDetailPanel.displayBuilding(building);
-        
+
         // 다이얼로그가 없거나 닫혀있으면 새로 생성
         if (buildingDialog == null || !buildingDialog.isVisible()) {
             // 부모 프레임 찾기
             JFrame parentFrame = (JFrame) javax.swing.SwingUtilities.getWindowAncestor(mainLeftPanel);
-            
+
             buildingDialog = new JDialog(parentFrame, "건물 상세 정보", false);
             buildingDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             buildingDialog.add(buildingDetailPanel);
             buildingDialog.setSize(900, 600);
             buildingDialog.setLocationRelativeTo(parentFrame);
-            
+
             // 다이얼로그가 닫힐 때 참조 제거
             buildingDialog.addWindowListener(new WindowAdapter() {
                 @Override
@@ -188,7 +182,7 @@ public class PanelControllerImpl implements PanelController {
                 }
             });
         }
-        
+
         buildingDialog.setVisible(true);
     }
 
@@ -198,23 +192,23 @@ public class PanelControllerImpl implements PanelController {
             System.out.println("openFacilityDetail: facility가 null입니다."); // 디버깅용
             return;
         }
-        
+
         System.out.println("openFacilityDetail 호출됨: " + facility.getName()); // 디버깅용
-        
+
         // 패널에 시설 정보 표시
         facilityDetailPanel.displayFacility(facility);
-        
+
         // 다이얼로그가 없거나 닫혀있으면 새로 생성
         if (facilityDialog == null || !facilityDialog.isVisible()) {
             // 부모 프레임 찾기
             JFrame parentFrame = (JFrame) javax.swing.SwingUtilities.getWindowAncestor(mainLeftPanel);
-            
+
             facilityDialog = new JDialog(parentFrame, "시설 상세 정보", false);
             facilityDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             facilityDialog.add(facilityDetailPanel);
             facilityDialog.setSize(900, 600);
             facilityDialog.setLocationRelativeTo(parentFrame);
-            
+
             // 다이얼로그가 닫힐 때 참조 제거
             facilityDialog.addWindowListener(new WindowAdapter() {
                 @Override
@@ -223,7 +217,7 @@ public class PanelControllerImpl implements PanelController {
                 }
             });
         }
-        
+
         facilityDialog.setVisible(true);
     }
 }

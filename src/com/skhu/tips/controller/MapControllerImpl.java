@@ -11,23 +11,23 @@ import com.skhu.tips.view.map.MapPanel;
  */
 public class MapControllerImpl implements MapController {
 
-    private final MapPanel mapPanel;
-    private final DataService dataService;
+    private MapPanel mapPanel;
+    private DataService dataService;
     private PanelController panelController;
-
-    /**
-     * @brief MapControllerImpl 생성자
-     * @param mapPanel 제어할 MapPanel 뷰
-     * @param dataService DataService 인터페이스
-     */
-    public MapControllerImpl(MapPanel mapPanel, DataService dataService) {
-        this.mapPanel = mapPanel;
-        this.dataService = dataService;
-    }
 
     // --- MapController Interface Implementation ---
 
     // TODO: 김준 (구현 필요)
+
+    /**
+     * @brief 시스템 시작 후 처음에 실행되어 외부 클래스들을 주입받아 컨트롤러를 구성
+     */
+    @Override
+    public void initialize(MapPanel mapPanel, DataService dataService, PanelController panelController) {
+        this.mapPanel = mapPanel;
+        this.dataService = dataService;
+        this.panelController = panelController;
+    }
 
     @Override
     public void focusOn(Building building) {
@@ -47,11 +47,6 @@ public class MapControllerImpl implements MapController {
     @Override
     public void switchToFacilityView() {
 
-    }
-
-    @Override
-    public void setPanelController(PanelController panelController) {
-        this.panelController = panelController;
     }
 
 

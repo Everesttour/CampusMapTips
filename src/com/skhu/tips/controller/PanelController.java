@@ -2,6 +2,8 @@ package com.skhu.tips.controller;
 
 import com.skhu.tips.model.entity.Building;
 import com.skhu.tips.model.entity.Facility;
+import com.skhu.tips.model.service.DataService;
+import com.skhu.tips.view.panel.MainLeftPanel;
 
 /**
  * @interface PanelController
@@ -32,5 +34,5 @@ public interface PanelController {
      * MapController 인터페이스를 주입받습니다. (Setter DI)
      * @param mapController MapController의 인터페이스
      */
-    void setMapController(MapController mapController);
+    void initialize(MainLeftPanel mainLeftPanel, DataService dataService, MapController mapController);
 }
