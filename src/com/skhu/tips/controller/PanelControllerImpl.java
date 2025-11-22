@@ -65,6 +65,39 @@ public class PanelControllerImpl implements PanelController {
     public PanelControllerImpl() {
         // configure()에서 초기화됨
     }
+    // =======================================================================
+    // --- PanelController Interface Implementation ---
+    // =======================================================================
+
+    /**
+     * @brief 1단계: 의존성 주입 (Wiring)
+     */
+    @Override
+    public void configure(MainLeftPanel mainLeftPanel, DataService dataService, MapController mapController) {
+        this.mainLeftPanel = mainLeftPanel;
+        this.dataService = dataService;
+        this.mapController = mapController;
+        
+        // 디테일 패널 초기화
+        buildingDetailPanel = new BuildingDetailPanel();
+        facilityDetailPanel = new FacilityDetailPanel();
+    }
+
+    /**
+     * @brief 2단계: 초기 데이터 로딩 및 리스너 등록
+     */
+    @Override
+    public void loadInitialData() {
+        // 뷰에 데이터 채우기
+        mainLeftPanel.setBuildingListData(dataService.getBuildings());
+        mainLeftPanel.setFacilityListData(dataService.getFacilities());
+
+        // 뷰의 컴포넌트에 직접 리스너를 등록
+        attachViewListeners();
+        
+        // 초기 뷰 상태 설정
+        switchToBuildingView();
+    }
 
     /**
      * @brief 뷰(MainLeftPanel)의 스윙 컴포넌트에 이벤트 리스너를 등록합니다.
@@ -77,7 +110,8 @@ public class PanelControllerImpl implements PanelController {
             if (!e.getValueIsAdjusting()) {
                 Building selected = mainLeftPanel.getBuildingList().getSelectedValue();
                 if (selected != null) {
-                    handleBuildingSelection(selected);
+                    mapController.focusOn(selected);
+                    openBuildingDetail(selected);
                 }
             }
         });
@@ -93,7 +127,8 @@ public class PanelControllerImpl implements PanelController {
                         if (selected != null) {
                             // 선택 상태 업데이트 (같은 항목이어도)
                             mainLeftPanel.getBuildingList().setSelectedIndex(index);
-                            handleBuildingSelection(selected);
+                            mapController.focusOn(selected);
+                            openBuildingDetail(selected);
                         }
                     }
                 }
@@ -106,7 +141,8 @@ public class PanelControllerImpl implements PanelController {
             if (!e.getValueIsAdjusting()) {
                 Facility selected = mainLeftPanel.getFacilityList().getSelectedValue();
                 if (selected != null) {
-                    handleFacilitySelection(selected);
+                    mapController.focusOn(selected);
+                    openFacilityDetail(selected);
                 }
             }
         });
@@ -122,7 +158,8 @@ public class PanelControllerImpl implements PanelController {
                         if (selected != null) {
                             // 선택 상태 업데이트 (같은 항목이어도)
                             mainLeftPanel.getFacilityList().setSelectedIndex(index);
-                            handleFacilitySelection(selected);
+                            mapController.focusOn(selected);
+                            openFacilityDetail(selected);
                         }
                     }
                 }
@@ -134,30 +171,6 @@ public class PanelControllerImpl implements PanelController {
         mainLeftPanel.getFacilityButton().addActionListener(e -> switchToFacilityView());
     }
     
-    /**
-     * 건물 선택 처리 로직 (중복 코드 제거)
-     */
-    private void handleBuildingSelection(Building selected) {
-        System.out.println("건물 선택됨: " + selected.getName()); // 디버깅용
-        // 컨트롤러의 핵심 로직: MapController에게 명령 (null 체크)
-        if (mapController != null) {
-            mapController.focusOn(selected);
-        }
-        // mapController가 null이어도 detail panel은 열 수 있음
-        openBuildingDetail(selected);
-    }
-    
-    /**
-     * 시설 선택 처리 로직 (중복 코드 제거)
-     */
-    private void handleFacilitySelection(Facility selected) {
-        System.out.println("시설 선택됨: " + selected.getName()); // 디버깅용
-        // mapController가 null이어도 detail panel은 열 수 있음
-        if (mapController != null) {
-            mapController.focusOn(selected);
-        }
-        openFacilityDetail(selected);
-    }
 
     // --- PanelController 인터페이스 구현 ---
 
@@ -941,39 +954,5 @@ public class PanelControllerImpl implements PanelController {
                 glassPane.setVisible(false);
             }
         }
-    }
-
-    // =======================================================================
-    // --- PanelController Interface Implementation ---
-    // =======================================================================
-
-    /**
-     * @brief 1단계: 의존성 주입 (Wiring)
-     */
-    @Override
-    public void configure(MainLeftPanel mainLeftPanel, DataService dataService, MapController mapController) {
-        this.mainLeftPanel = mainLeftPanel;
-        this.dataService = dataService;
-        this.mapController = mapController;
-        
-        // 디테일 패널 초기화
-        buildingDetailPanel = new BuildingDetailPanel();
-        facilityDetailPanel = new FacilityDetailPanel();
-    }
-
-    /**
-     * @brief 2단계: 초기 데이터 로딩 및 리스너 등록
-     */
-    @Override
-    public void loadInitialData() {
-        // 뷰에 데이터 채우기
-        mainLeftPanel.setBuildingListData(dataService.getBuildings());
-        mainLeftPanel.setFacilityListData(dataService.getFacilities());
-
-        // 뷰의 컴포넌트에 직접 리스너를 등록
-        attachViewListeners();
-        
-        // 초기 뷰 상태 설정
-        switchToBuildingView();
     }
 }
