@@ -4,19 +4,14 @@ package com.skhu.tips.view.panel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Image;
-import java.io.File;
-import java.io.IOException;
 
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.SwingConstants;
 
 import com.skhu.tips.model.entity.Facility;
 
@@ -26,7 +21,6 @@ import com.skhu.tips.model.entity.Facility;
  */
 public class FacilityDetailPanel extends JPanel {
 	
-	private JLabel imageLabel;
 	private JPanel infoPanel;
 	private JPanel tipsPanel;
 	
@@ -37,7 +31,7 @@ public class FacilityDetailPanel extends JPanel {
 	private JTextArea descriptionArea;
 	private JTextArea overviewArea;
 	private JLabel operatingHoursLabel;
-	private JTextArea noticeArea;
+	private JLabel noticeLabel;
 	
 	// 꿀팁 표시용 컴포넌트
 	private JTextArea tipsArea;
@@ -53,15 +47,6 @@ public class FacilityDetailPanel extends JPanel {
 	 * 컴포넌트 초기화
 	 */
 	private void initializeComponents() {
-		// 왼쪽: 이미지 패널
-		imageLabel = new JLabel();
-		imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		imageLabel.setVerticalAlignment(SwingConstants.CENTER);
-		imageLabel.setPreferredSize(new Dimension(200, 300));
-		imageLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-		imageLabel.setOpaque(true);
-		imageLabel.setBackground(Color.WHITE);
-		
 		// 중앙: 정보 패널
 		infoPanel = createInfoPanel();
 		
@@ -76,21 +61,16 @@ public class FacilityDetailPanel extends JPanel {
 		JPanel panel = new JPanel(new BorderLayout(10, 10));
 		panel.setBorder(BorderFactory.createTitledBorder("시설 정보"));
 		
-		// 상단: 이름, 건물명, 층수
+		// 상단: 이름, 건물명
 		JPanel headerPanel = new JPanel(new BorderLayout(5, 5));
 		
 		nameLabel = new JLabel();
 		nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
 		headerPanel.add(nameLabel, BorderLayout.NORTH);
 		
-		JPanel subHeaderPanel = new JPanel(new BorderLayout(5, 5));
 		buildingNameLabel = new JLabel();
 		buildingNameLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-		floorLabel = new JLabel();
-		floorLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-		subHeaderPanel.add(buildingNameLabel, BorderLayout.WEST);
-		subHeaderPanel.add(floorLabel, BorderLayout.EAST);
-		headerPanel.add(subHeaderPanel, BorderLayout.CENTER);
+		headerPanel.add(buildingNameLabel, BorderLayout.CENTER);
 		
 		panel.add(headerPanel, BorderLayout.NORTH);
 		
@@ -103,9 +83,11 @@ public class FacilityDetailPanel extends JPanel {
 		overviewArea.setEditable(false);
 		overviewArea.setLineWrap(true);
 		overviewArea.setWrapStyleWord(true);
-		overviewArea.setBackground(Color.WHITE);
+		overviewArea.setOpaque(false); // 배경 투명하게 (패널 배경과 동일)
 		overviewArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 		JScrollPane overviewScroll = new JScrollPane(overviewArea);
+		overviewScroll.setOpaque(false);
+		overviewScroll.getViewport().setOpaque(false);
 		overviewScroll.setBorder(BorderFactory.createTitledBorder("개요"));
 		overviewScroll.setPreferredSize(new Dimension(0, 100));
 		
@@ -115,9 +97,11 @@ public class FacilityDetailPanel extends JPanel {
 		descriptionArea.setEditable(false);
 		descriptionArea.setLineWrap(true);
 		descriptionArea.setWrapStyleWord(true);
-		descriptionArea.setBackground(Color.WHITE);
+		descriptionArea.setOpaque(false); // 배경 투명하게 (패널 배경과 동일)
 		descriptionArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 		JScrollPane descriptionScroll = new JScrollPane(descriptionArea);
+		descriptionScroll.setOpaque(false);
+		descriptionScroll.getViewport().setOpaque(false);
 		descriptionScroll.setBorder(BorderFactory.createTitledBorder("설명"));
 		
 		contentPanel.add(overviewScroll, BorderLayout.NORTH);
@@ -125,24 +109,27 @@ public class FacilityDetailPanel extends JPanel {
 		
 		panel.add(contentPanel, BorderLayout.CENTER);
 		
-		// 하단: 운영시간 및 공지사항
-		JPanel footerPanel = new JPanel(new BorderLayout(5, 5));
+		// 하단: 층수, 운영시간, 공지사항 (가로 정렬)
+		JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+		footerPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 		
-		operatingHoursLabel = new JLabel();
-		operatingHoursLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+		// 층수
+		floorLabel = new JLabel("-");
+		floorLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+		floorLabel.setBorder(BorderFactory.createTitledBorder("층수"));
+		footerPanel.add(floorLabel);
+		
+		// 운영시간
+		operatingHoursLabel = new JLabel("-");
+		operatingHoursLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
 		operatingHoursLabel.setBorder(BorderFactory.createTitledBorder("운영 시간"));
-		footerPanel.add(operatingHoursLabel, BorderLayout.NORTH);
+		footerPanel.add(operatingHoursLabel);
 		
-		noticeArea = new JTextArea();
-		noticeArea.setEditable(false);
-		noticeArea.setLineWrap(true);
-		noticeArea.setWrapStyleWord(true);
-		noticeArea.setBackground(Color.WHITE);
-		noticeArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-		JScrollPane noticeScroll = new JScrollPane(noticeArea);
-		noticeScroll.setBorder(BorderFactory.createTitledBorder("공지사항"));
-		noticeScroll.setPreferredSize(new Dimension(0, 80));
-		footerPanel.add(noticeScroll, BorderLayout.CENTER);
+		// 공지사항
+		noticeLabel = new JLabel("-");
+		noticeLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+		noticeLabel.setBorder(BorderFactory.createTitledBorder("공지사항"));
+		footerPanel.add(noticeLabel);
 		
 		panel.add(footerPanel, BorderLayout.SOUTH);
 		
@@ -161,10 +148,12 @@ public class FacilityDetailPanel extends JPanel {
 		tipsArea.setEditable(false);
 		tipsArea.setLineWrap(true);
 		tipsArea.setWrapStyleWord(true);
-		tipsArea.setBackground(Color.WHITE);
+		tipsArea.setOpaque(false); // 배경 투명하게 (패널 배경과 동일)
 		tipsArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 		
 		JScrollPane scrollPane = new JScrollPane(tipsArea);
+		scrollPane.setOpaque(false);
+		scrollPane.getViewport().setOpaque(false);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
 		panel.add(scrollPane, BorderLayout.CENTER);
 		
@@ -175,11 +164,6 @@ public class FacilityDetailPanel extends JPanel {
 	 * 레이아웃 설정
 	 */
 	private void setupLayout() {
-		JPanel leftPanel = new JPanel(new BorderLayout());
-		leftPanel.add(imageLabel, BorderLayout.CENTER);
-		leftPanel.setPreferredSize(new Dimension(200, 0));
-		
-		add(leftPanel, BorderLayout.WEST);
 		add(infoPanel, BorderLayout.CENTER);
 		add(tipsPanel, BorderLayout.EAST);
 	}
@@ -194,149 +178,75 @@ public class FacilityDetailPanel extends JPanel {
 		}
 		
 		// 이름
-		nameLabel.setText(facility.getName() != null ? facility.getName() : "");
+		String name = facility.getName();
+		nameLabel.setText((name != null && !name.trim().isEmpty()) ? name : "-");
 		
 		// 건물명
-		buildingNameLabel.setText("건물: " + (facility.getBuildingName() != null ? facility.getBuildingName() : ""));
+		String buildingName = facility.getBuildingName();
+		buildingNameLabel.setText("건물: " + ((buildingName != null && !buildingName.trim().isEmpty()) ? buildingName : "-"));
 		
 		// 층수
-		floorLabel.setText("층수: " + facility.getFloor() + "층");
+		int floor = facility.getFloor();
+		String floorText;
+		if (floor == 0) {
+			floorText = "     -     ";
+		} else if (floor < 0) {
+			floorText = "지하 " + Math.abs(floor) + "층";
+		} else {
+			floorText = "  " + floor + "층  ";
+		}
+		floorLabel.setText(floorText);
 		
 		// 개요
-		overviewArea.setText(facility.getOverview() != null ? facility.getOverview() : "");
+		String overview = facility.getOverview();
+		overviewArea.setText((overview != null && !overview.trim().isEmpty()) ? overview : "-");
 		overviewArea.setCaretPosition(0);
 		
 		// 설명
-		descriptionArea.setText(facility.getDescription() != null ? facility.getDescription() : "");
+		String description = facility.getDescription();
+		descriptionArea.setText((description != null && !description.trim().isEmpty()) ? description : "-");
 		descriptionArea.setCaretPosition(0);
 		
 		// 운영시간
-		operatingHoursLabel.setText(facility.getOperatingHours() != null ? facility.getOperatingHours() : "정보 없음");
+		String operatingHours = facility.getOperatingHours();
+		operatingHoursLabel.setText((operatingHours != null && !operatingHours.trim().isEmpty()) ? operatingHours : "-");
 		
 		// 공지사항
-		noticeArea.setText(facility.getNotice() != null ? facility.getNotice() : "");
-		noticeArea.setCaretPosition(0);
+		String notice = facility.getNotice();
+		noticeLabel.setText((notice != null && !notice.trim().isEmpty()) ? notice : "-");
 		
 		// 꿀팁
 		if (facility.getTips() != null && facility.getTips().length > 0) {
 			StringBuilder tipsText = new StringBuilder();
+			boolean hasValidTip = false;
 			for (int i = 0; i < facility.getTips().length; i++) {
-				tipsText.append("• ").append(facility.getTips()[i]);
-				if (i < facility.getTips().length - 1) {
-					tipsText.append("\n\n");
+				String tip = facility.getTips()[i];
+				if (tip != null && !tip.trim().isEmpty()) {
+					if (hasValidTip) {
+						tipsText.append("\n\n");
+					}
+					tipsText.append("• ").append(tip);
+					hasValidTip = true;
 				}
 			}
-			tipsArea.setText(tipsText.toString());
+			tipsArea.setText(hasValidTip ? tipsText.toString() : "-");
 		} else {
-			tipsArea.setText("꿀팁 정보가 없습니다.");
+			tipsArea.setText("-");
 		}
 		tipsArea.setCaretPosition(0);
-		
-		// 이미지 로드
-		loadFacilityImage(facility);
-	}
-	
-	/**
-	 * 시설 이미지를 로드합니다.
-	 */
-	private void loadFacilityImage(Facility facility) {
-		if (facility == null || facility.getName() == null) {
-			imageLabel.setIcon(null);
-			imageLabel.setText("이미지 없음");
-			return;
-		}
-		
-		// 이미지 경로 시도 (시설명 기반)
-		String[] imagePaths = {
-			"images/facilities/" + facility.getName() + ".jpg",
-			"images/facilities/" + facility.getName() + ".png",
-			"images/facilities/" + facility.getId() + ".jpg",
-			"images/facilities/" + facility.getId() + ".png"
-		};
-		
-		ImageIcon icon = null;
-		for (String path : imagePaths) {
-			icon = loadImageIcon(path, 300);
-			if (icon != null && icon.getIconWidth() > 0) {
-				break;
-			}
-		}
-		
-		if (icon != null && icon.getIconWidth() > 0) {
-			imageLabel.setIcon(icon);
-			imageLabel.setText("");
-		} else {
-			imageLabel.setIcon(null);
-			imageLabel.setText("이미지 없음");
-		}
-	}
-	
-	/**
-	 * 이미지 파일을 로드하여 ImageIcon으로 변환합니다.
-	 */
-	private ImageIcon loadImageIcon(String resourcePath, int maxHeight) {
-		try {
-			Image image = loadImage(resourcePath);
-			
-			if (image != null) {
-				// 비율 유지하며 높이에 맞춰 리사이즈
-				int width = image.getWidth(null);
-				int height = image.getHeight(null);
-				if (height > maxHeight) {
-					width = (width * maxHeight) / height;
-					height = maxHeight;
-				}
-				image = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-				return new ImageIcon(image);
-			}
-		} catch (Exception e) {
-			System.err.println("이미지 로드 실패 [" + resourcePath + "]: " + e.getMessage());
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * 이미지 파일을 로드합니다.
-	 */
-	private Image loadImage(String resourcePath) throws IOException {
-		// 1. 클래스패스에서 리소스 로드 시도
-		java.net.URL url = getClass().getClassLoader().getResource(resourcePath);
-		if (url != null) {
-			return ImageIO.read(url);
-		}
-		
-		// 2. 파일 시스템에서 로드 시도
-		String[] paths = {
-			"src/resources/" + resourcePath,
-			"CampusMapTips/src/resources/" + resourcePath,
-			"resources/" + resourcePath,
-			"../src/resources/" + resourcePath
-		};
-		
-		for (String path : paths) {
-			File file = new File(path);
-			if (file.exists()) {
-				return ImageIO.read(file);
-			}
-		}
-		
-		return null;
 	}
 	
 	/**
 	 * 표시 내용을 초기화합니다.
 	 */
 	private void clearDisplay() {
-		nameLabel.setText("");
-		buildingNameLabel.setText("");
-		floorLabel.setText("");
-		overviewArea.setText("");
-		descriptionArea.setText("");
-		operatingHoursLabel.setText("");
-		noticeArea.setText("");
-		tipsArea.setText("");
-		imageLabel.setIcon(null);
-		imageLabel.setText("이미지 없음");
+		nameLabel.setText("-");
+		buildingNameLabel.setText("건물: -");
+		floorLabel.setText("-");
+		overviewArea.setText("-");
+		descriptionArea.setText("-");
+		operatingHoursLabel.setText("-");
+		noticeLabel.setText("-");
+		tipsArea.setText("-");
 	}
 }

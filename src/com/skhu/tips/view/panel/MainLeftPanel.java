@@ -10,6 +10,8 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -28,155 +30,89 @@ import com.skhu.tips.model.entity.Facility;
 
 /**
  * @class MainLeftPanel
- * @brief 왼쪽 메인 패널 뷰. 컴포넌트를 소유하며, 컨트롤러가 사용할 Getter와 단순 동작 메소드를 제공합니다.
+ * @brief "멍청한 뷰" - 오직 컴포넌트를 소유하고 Getter만 제공합니다.
  */
 public class MainLeftPanel extends JPanel {
 
-    // --- 1. Fields (컴포넌트 및 데이터 모델) ---
+    // 1. 뷰가 내부적으로 소유한 컴포넌트
     private JList<Building> buildingList;
     private JList<Facility> facilityList;
     private JButton buildingButton;
     private JButton facilityButton;
     private JPanel buttonPanel;
     private JPanel contentPanel;
+    private JScrollPane currentScrollPane;
+
+    // (JList에 데이터를 채우기 위한 모델)
     private DefaultListModel<Building> buildingModel = new DefaultListModel<>();
     private DefaultListModel<Facility> facilityModel = new DefaultListModel<>();
-    private JScrollPane buildingScrollPane;
-    private JScrollPane facilityScrollPane;
+
+    // 이미지 아이콘
     private ImageIcon buildingIcon;
     private ImageIcon facilityIcon;
-    private final Color buildingColor = new Color(173, 216, 230);
-    private final Color facilityColor = new Color(255, 182, 193);
+    
+    // 현재 선택된 뷰 타입 (true: 건물, false: 시설)
+    private boolean isBuildingView = true;
 
-    /**
-     * @brief 생성자: 뷰 초기화 및 레이아웃 설정
-     */
     public MainLeftPanel() {
         super(new BorderLayout());
+        
+        // 1. 리소스 로드
         loadIcons();
+        
+        // 2. 컴포넌트 초기화
         initializeComponents();
+        
+        // 3. 레이아웃 설정
         setupLayout();
         
-        // 초기 상태 설정: 건물 리스트를 기본으로 표시
-        updateButtonColors(true);
+        // 4. 초기 상태 설정
+        updateButtonStates(true);
+        
+        // 뷰는 리스너를 등록하지 않습니다!
     }
-
-    // =======================================================================
-    // --- 2. Public API & Getters (컨트롤러가 사용하는 메소드) ---
-    // =======================================================================
-
+    
     /**
-     * @brief [Controller API] 건물 리스트 JList 객체를 반환합니다.
-     */
-    public JList<Building> getBuildingList() { return buildingList; }
-
-    /**
-     * @brief [Controller API] 시설 리스트 JList 객체를 반환합니다.
-     */
-    public JList<Facility> getFacilityList() { return facilityList; }
-
-    /**
-     * @brief [Controller API] 건물 버튼 객체를 반환합니다.
-     */
-    public JButton getBuildingButton() { return buildingButton; }
-
-    /**
-     * @brief [Controller API] 시설 버튼 객체를 반환합니다.
-     */
-    public JButton getFacilityButton() { return facilityButton; }
-
-    /**
-     * @brief [Controller API] 건물 데이터를 리스트에 설정합니다.
-     */
-    public void setBuildingListData(List<Building> data) {
-        buildingModel.clear();
-        data.forEach(buildingModel::addElement);
-    }
-
-    /**
-     * @brief [Controller API] 시설 데이터를 리스트에 설정합니다.
-     */
-    public void setFacilityListData(List<Facility> data) {
-        facilityModel.clear();
-        data.forEach(facilityModel::addElement);
-    }
-
-    /**
-     * @brief [Controller API] 뷰를 건물 리스트로 전환합니다.
-     */
-    public void showBuildingList() {
-        contentPanel.remove(facilityScrollPane);
-        contentPanel.add(buildingScrollPane, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-    }
-
-    /**
-     * @brief [Controller API] 뷰를 시설 리스트로 전환합니다.
-     */
-    public void showFacilityList() {
-        contentPanel.remove(buildingScrollPane);
-        contentPanel.add(facilityScrollPane, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-    }
-
-    /**
-     * @brief [Controller API] 버튼 색상을 활성화/비활성화 상태로 변경합니다.
-     */
-    public void updateButtonColors(boolean isBuildingActive) {
-        if (isBuildingActive) {
-            buildingButton.setBackground(buildingColor.darker());
-            facilityButton.setBackground(facilityColor);
-        } else {
-            buildingButton.setBackground(buildingColor);
-            facilityButton.setBackground(facilityColor.darker());
-        }
-    }
-
-
-    // =======================================================================
-    // --- 3. Private Implementation Helpers (내부 구현 로직) ---
-    // =======================================================================
-
-    /**
-     * @brief 내부 컴포넌트를 초기화하고 커스텀 렌더러를 설정합니다.
+     * 모든 컴포넌트를 생성하고 기본 설정을 적용합니다.
      */
     private void initializeComponents() {
+        // 리스트 컴포넌트 생성
         buildingList = new JList<>(buildingModel);
         facilityList = new JList<>(facilityModel);
-
+        
         // 리스트 선택 모드 설정 (단일 선택)
         buildingList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         facilityList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-
+        
+        // 커스텀 렌더러 설정
         buildingList.setCellRenderer(new ButtonListCellRenderer<>(true));
         facilityList.setCellRenderer(new ButtonListCellRenderer<>(false));
-
-        buildingScrollPane = new JScrollPane(buildingList);
-        facilityScrollPane = new JScrollPane(facilityList);
-
+        
+        // 카테고리 버튼 생성
         buildingButton = createCategoryButton(true);
         facilityButton = createCategoryButton(false);
-
+        
+        // 버튼 패널 생성 및 버튼 추가
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         buttonPanel.add(buildingButton);
         buttonPanel.add(facilityButton);
-
+        
+        // 콘텐츠 패널 생성
         contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(buildingScrollPane, BorderLayout.CENTER); // 기본 설정
+        currentScrollPane = new JScrollPane(buildingList);
+        contentPanel.add(currentScrollPane, BorderLayout.CENTER);
     }
-
+    
     /**
-     * @brief 메인 레이아웃을 설정하고 컴포넌트를 배치합니다.
+     * 레이아웃을 설정하고 컴포넌트를 배치합니다.
      */
     private void setupLayout() {
         add(buttonPanel, BorderLayout.NORTH);
         add(contentPanel, BorderLayout.CENTER);
     }
-
+    
     /**
-     * @brief 카테고리 버튼을 생성하고 스타일을 적용합니다.
+     * 카테고리 버튼을 생성합니다.
      */
     private JButton createCategoryButton(boolean isBuilding) {
         JButton button = new JButton() {
@@ -203,186 +139,171 @@ public class MainLeftPanel extends JPanel {
                 g2.dispose();
             }
         };
-
+        
+        // 아이콘 크기 조정 (버튼용)
         ImageIcon buttonIcon = resizeIconForButton(isBuilding ? buildingIcon : facilityIcon, 32);
         button.setIcon(buttonIcon);
-
-        button.setBackground(isBuilding ? buildingColor : facilityColor);
+        
+        // 색상 설정
+        if (isBuilding) {
+            button.setBackground(new Color(173, 216, 230)); // 연한 파랑
+        } else {
+            button.setBackground(new Color(255, 182, 193)); // 연한 빨강
+        }
+        
         button.setOpaque(false); // paintComponent에서 직접 그리므로 false
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
-        button.setPreferredSize(new Dimension(150, 60));
-
+        button.setPreferredSize(new Dimension(150, 50));
+        
         return button;
     }
-
+    
     /**
-     * @brief 원본 아이콘을 지정된 크기로 안전하게 리사이즈합니다.
+     * 아이콘을 버튼용 크기로 리사이즈합니다.
      */
     private ImageIcon resizeIconForButton(ImageIcon originalIcon, int size) {
         if (originalIcon == null || originalIcon.getIconWidth() == 0) {
             return new ImageIcon();
         }
         Image img = originalIcon.getImage();
-        if (img == null) {
-            return new ImageIcon();
-        }
         Image resizedImg = img.getScaledInstance(size, size, Image.SCALE_SMOOTH);
         return new ImageIcon(resizedImg);
     }
+    
+    /**
+     * 버튼 상태를 업데이트하고 뷰를 전환합니다.
+     */
+    private void updateButtonStates(boolean showBuilding) {
+        isBuildingView = showBuilding;
+        
+        if (showBuilding) {
+            // 건물 버튼 활성화, 시설 버튼 비활성화
+            buildingButton.setBackground(new Color(173, 216, 230).darker());
+            facilityButton.setBackground(new Color(255, 182, 193));
+            
+            // 건물 리스트 표시
+            contentPanel.remove(currentScrollPane);
+            currentScrollPane = new JScrollPane(buildingList);
+            contentPanel.add(currentScrollPane, BorderLayout.CENTER);
+        } else {
+            // 시설 버튼 활성화, 건물 버튼 비활성화
+            facilityButton.setBackground(new Color(255, 182, 193).darker());
+            buildingButton.setBackground(new Color(173, 216, 230));
+            
+            // 시설 리스트 표시
+            contentPanel.remove(currentScrollPane);
+            currentScrollPane = new JScrollPane(facilityList);
+            contentPanel.add(currentScrollPane, BorderLayout.CENTER);
+        }
+        
+        contentPanel.revalidate();
+        contentPanel.repaint();
+    }
+
 
     /**
-     * @brief 이미지 리소스를 클래스패스에서 안전하게 불러옵니다.
+     * 이미지 아이콘을 로드합니다.
      */
     private void loadIcons() {
-        buildingIcon = loadImageIcon("images/LeftPanel/Building_Icon.png", "resources/images/LeftPanel/Building_Icon.png", 40);
-        facilityIcon = loadImageIcon("images/LeftPanel/Facility_Icon.png", "resources/images/LeftPanel/Facility_Icon.png", 40);
+        buildingIcon = loadImageIcon("images/LeftPanel/Building_Icon.png", 40);
+        facilityIcon = loadImageIcon("images/LeftPanel/Facility_Icon.png", 40);
     }
-
+    
     /**
-     * @brief 이미지 파일을 읽어와 ImageIcon으로 변환하는 헬퍼 메소드 (Null-Safe)
+     * 이미지 파일을 로드하여 ImageIcon으로 변환합니다.
+     * 클래스패스와 파일 시스템 경로를 모두 시도합니다.
+     * 
+     * @param resourcePath 클래스패스 기준 리소스 경로 (예: "images/LeftPanel/icon.png")
+     * @param size 리사이즈할 크기 (정사각형)
+     * @return 로드된 ImageIcon, 실패 시 빈 ImageIcon
      */
-    private ImageIcon loadImageIcon(String primaryPath, String fallbackPath, int size) {
-        Image image = null;
+    private ImageIcon loadImageIcon(String resourcePath, int size) {
         try {
-            java.net.URL url = getClass().getClassLoader().getResource(primaryPath);
-            if (url == null) {
-                url = getClass().getClassLoader().getResource(fallbackPath);
-            }
-
-            if (url != null) {
-                image = ImageIO.read(url);
+            Image image = loadImage(resourcePath);
+            
+            if (image != null) {
                 image = image.getScaledInstance(size, size, Image.SCALE_SMOOTH);
                 return new ImageIcon(image);
-            } else {
-                System.err.println("이미지 리소스 찾기 실패: " + primaryPath + " 및 " + fallbackPath);
             }
         } catch (Exception e) {
-            System.err.println("이미지 로드 실패 [" + primaryPath + "]: " + e.getMessage());
+            System.err.println("이미지 로드 실패 [" + resourcePath + "]: " + e.getMessage());
         }
+        
         return new ImageIcon();
     }
-
-
-    // =======================================================================
-    // --- 4. Custom ListCellRenderer (JList 커스텀 그리기) ---
-    // =======================================================================
-
+    
     /**
-     * @class ButtonListCellRenderer
-     * @brief JList의 각 항목을 커스텀 디자인(원형 순번, 명칭, 설명)으로 그리는 렌더러.
+     * 이미지 파일을 로드합니다. 클래스패스를 먼저 시도하고, 실패하면 파일 시스템 경로를 시도합니다.
+     * 
+     * @param resourcePath 클래스패스 기준 리소스 경로
+     * @return 로드된 Image, 실패 시 null
      */
-    private static class ButtonListCellRenderer<T> implements ListCellRenderer<Object> {
-
-        private final boolean isBuilding;
-        private final Color lightBlue = new Color(173, 216, 230);
-        private final Color lightRed = new Color(255, 182, 193);
-        private final JPanel panel;
-        private final JLabel numberLabel;
-        private final JLabel nameLabel;
-        private final JLabel descriptionLabel;
-
-        public ButtonListCellRenderer(boolean isBuilding) {
-            this.isBuilding = isBuilding;
-
-            panel = new JPanel(new BorderLayout(10, 0));
-            panel.setOpaque(true);
-            panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 10, 8, 10));
-
-            numberLabel = new JLabel();
-            numberLabel.setPreferredSize(new Dimension(40, 40));
-            numberLabel.setHorizontalAlignment(JLabel.CENTER);
-            numberLabel.setVerticalAlignment(JLabel.CENTER);
-
-            JPanel textPanel = new JPanel(new BorderLayout(0, 4));
-            textPanel.setOpaque(false);
-
-            nameLabel = new JLabel();
-            nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-            nameLabel.setOpaque(false);
-
-            descriptionLabel = new JLabel();
-            descriptionLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-            descriptionLabel.setForeground(Color.GRAY);
-            descriptionLabel.setOpaque(false);
-
-            textPanel.add(nameLabel, BorderLayout.NORTH);
-            textPanel.add(descriptionLabel, BorderLayout.CENTER);
-
-            panel.add(numberLabel, BorderLayout.WEST);
-            panel.add(textPanel, BorderLayout.CENTER);
+    private Image loadImage(String resourcePath) throws IOException {
+        // 1. 클래스패스에서 리소스 로드 시도
+        java.net.URL url = getClass().getClassLoader().getResource(resourcePath);
+        if (url != null) {
+            return ImageIO.read(url);
         }
-
-        @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                boolean isSelected, boolean cellHasFocus) {
-
-            String name = "";
-            String description = "";
-
-            if (value instanceof Building) {
-                Building building = (Building) value;
-                name = building.getName();
-                description = building.getDescription() != null ? building.getDescription() : "";
-            } else if (value instanceof Facility) {
-                Facility facility = (Facility) value;
-                name = facility.getName();
-                description = facility.getDescription() != null ? facility.getDescription() : "";
+        
+        // 2. 파일 시스템에서 로드 시도
+        String[] paths = {
+            "src/resources/" + resourcePath,
+            "CampusMapTips/src/resources/" + resourcePath,
+            "../src/resources/" + resourcePath
+        };
+        
+        for (String path : paths) {
+            File file = new File(path);
+            if (file.exists()) {
+                return ImageIO.read(file);
             }
-
-            nameLabel.setText(name);
-            descriptionLabel.setText(description);
-
-            if (description.length() > 30) {
-                descriptionLabel.setText(description.substring(0, 27) + "...");
-            }
-
-            Color bgColor = isBuilding ? lightBlue : lightRed;
-            Color circleColor = isSelected ? bgColor.darker() : bgColor;
-            panel.setBackground(Color.WHITE);
-
-            String numberText = String.valueOf(index + 1);
-            ImageIcon circleIcon = createCircleIcon(circleColor, numberText, 40);
-            numberLabel.setIcon(circleIcon);
-
-            if (isSelected) {
-                panel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-                        javax.swing.BorderFactory.createLineBorder(bgColor.darker().darker(), 2),
-                        javax.swing.BorderFactory.createEmptyBorder(6, 8, 6, 8)
-                ));
-            } else {
-                panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 10, 8, 10));
-            }
-
-            panel.setPreferredSize(new Dimension(list.getWidth() - 20, 70));
-
-            return panel;
         }
+        
+        return null;
+    }
 
-        /**
-         * @brief 원형 배경에 숫자가 들어간 아이콘을 그려주는 헬퍼
-         */
-        private ImageIcon createCircleIcon(Color color, String text, int size) {
-            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = image.createGraphics();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    // --- 4. 컨트롤러가 접근할 수 있도록 Getter를 제공 ---
 
-            g2.setColor(color);
-            g2.fillOval(2, 2, size - 4, size - 4);
+    public JList<Building> getBuildingList() {
+        return buildingList;
+    }
 
-            if (text != null && !text.isEmpty()) {
-                g2.setColor(Color.WHITE);
-                Font font = new Font(Font.SANS_SERIF, Font.BOLD, 14);
-                g2.setFont(font);
+    public JList<Facility> getFacilityList() {
+        return facilityList;
+    }
 
-                int textX = (size - g2.getFontMetrics().stringWidth(text)) / 2;
-                int textY = (size + g2.getFontMetrics().getAscent()) / 2 - 2;
-                g2.drawString(text, textX, textY);
-            }
+    public JButton getBuildingButton() {
+        return buildingButton;
+    }
 
-            g2.dispose();
-            return new ImageIcon(image);
-        }
+    public JButton getFacilityButton() {
+        return facilityButton;
+    }
+    
+    /**
+     * 뷰를 건물 또는 시설로 전환합니다.
+     */
+    public void switchToBuildingView() {
+        updateButtonStates(true);
+    }
+    
+    /**
+     * 뷰를 시설로 전환합니다.
+     */
+    public void switchToFacilityView() {
+        updateButtonStates(false);
+    }
+
+    // --- 5. 뷰가 데이터를 표시하기 위한 메소드 ---
+    public void setBuildingListData(List<Building> data) {
+        buildingModel.clear();
+        data.forEach(buildingModel::addElement);
+    }
+
+    public void setFacilityListData(List<Facility> data) {
+        facilityModel.clear();
+        data.forEach(facilityModel::addElement);
     }
 }

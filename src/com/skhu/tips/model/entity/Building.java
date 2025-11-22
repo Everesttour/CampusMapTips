@@ -8,11 +8,11 @@ public class Building {
     private double yLocation;
     private String name;
     private String description;
-    private String[] rooms;
+    private String rooms;
 
     public Building() {}
 
-	public Building(int id, double xLocation, double yLocation, String name, String description, String[] rooms) {
+	public Building(int id, double xLocation, double yLocation, String name, String description, String rooms) {
 		super();
 		this.id = id;
 		this.xLocation = xLocation;
@@ -37,7 +37,7 @@ public class Building {
 	public String getDescription() {
 		return description;
 	}
-	public String[] getRooms() {
+	public String getRooms() {
 		return rooms;
 	}
 	public void setId(int id) {
@@ -55,7 +55,7 @@ public class Building {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	public void setRooms(String[] rooms) {
+	public void setRooms(String rooms) {
 		this.rooms = rooms;
 	}
 }
