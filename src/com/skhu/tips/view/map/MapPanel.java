@@ -1,7 +1,6 @@
 // 김준
 package com.skhu.tips.view.map;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -116,10 +115,6 @@ public class MapPanel extends JPanel {
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 		drawIcons(g2);
-		
-		if (currentFacilityPage != null) {
-            drawFacilityPage(g2); 
-        }
 	}
 
 	private void drawIcons(Graphics2D g2) {
@@ -139,7 +134,6 @@ public class MapPanel extends JPanel {
 				g2.setColor(Color.WHITE);
 				g2.drawOval(x - offset, y - offset, FACILITY_ICON_SIZE, FACILITY_ICON_SIZE);
 				g2.setColor(COLOR_FACILITY);
-				addUnUsableSpace(j++, x - offset, y - offset, FACILITY_ICON_SIZE);
 			}
 		}
 		// 건물 아이콘
@@ -162,7 +156,6 @@ public class MapPanel extends JPanel {
 			int textX = x - (fm.stringWidth(idText) / 2);
 			int textY = y + (fm.getAscent() - fm.getDescent() + fm.getLeading()) / 2;
 			g2.drawString(idText, textX, textY);
-			addUnUsableSpace(i++, x - offset, y - offset, BUILDING_ICON_SIZE);
 		}
 	}
 
@@ -176,47 +169,7 @@ public class MapPanel extends JPanel {
 			public void mouseClicked(MouseEvent e) {
 				handleIconClick(e.getX(), e.getY());
 				System.out.println("좌표 : " + e.getX() + ", " + e.getY());
-				// int q = 0;
-				// for(int[] a : unUsableSpace) {
-				// System.out.println(q++ + "번 x : " + a[0] + "y : " + a[1] + "size : " + a[2]);
-				// }
-				if (checkUnUsableSpace(e.getX(), e.getY()))
-					System.out.println("배치가능");
-				
-				
-				// 만약 현재 페이지가 열려있지 않다면, 테스트 객체를 만들고 띄웁니다.
-                if (currentFacilityPage == null) {
-                    // 1. 테스트용 Facility 객체 생성 (실제 사용되는 필드 값 설정)
-                    Facility testFacility = new Facility();
-                    // Facility 클래스에 setId, setName, setTips 메서드가 있다고 가정합니다.
-                    testFacility.setId(99); 
-                    testFacility.setName("정보 검색대 (TEST)");
-                    testFacility.setBuildingName("미가엘관");
-                    testFacility.setFloor(3); // int 값 할당
-                    testFacility.setNotice("현재 수리 중, 이용 불가");
-                    // 위치 정보는 페이지 출력에 직접 사용되지 않지만, 디버깅을 위해 설정 가능합니다.
-                    // testFacility.setxLocation(100); 
-                    // testFacility.setyLocation(200);
 
-                    currentFacilityPage = testFacility;
-                    
-                    // 2. 페이지 출력 좌표 설정 (클릭한 마우스 위치 기준)
-                    pageDrawX = e.getX() + 10;
-                    pageDrawY = e.getY() - (pageHeight / 2);
-                    
-                    // 페이지가 화면 밖으로 나가지 않도록 간단히 조정
-                    if (pageDrawX + pageWidth > getWidth()) {
-                        pageDrawX = e.getX() - pageWidth - 10;
-                    }
-                    if (pageDrawY < 0) {
-                        pageDrawY = 5;
-                    }
-                    
-                } else {
-                    // 페이지가 이미 열려 있다면, 클릭 시 닫습니다.
-                    currentFacilityPage = null; 
-                }
-                
                 repaint(); // 페이지를 그리거나 지우기 위해 화면 갱신을 요청합니다.
                 System.out.println("출력완료");                // --- [테스트 로직 종료] ---
 			}
@@ -409,8 +362,8 @@ public class MapPanel extends JPanel {
 		double currentMapW = mapLabel.getWidth();
 		double currentMapH = mapLabel.getHeight();
 
-		double relX = (double) (mouseX - currentMapX) / currentMapW;
-		double relY = (double) (mouseY - currentMapY) / currentMapH;
+		double relX = (mouseX - currentMapX) / currentMapW;
+		double relY = (mouseY - currentMapY) / currentMapH;
 
 		int panelWidth = getWidth();
 		int panelHeight = getHeight();
@@ -430,7 +383,7 @@ public class MapPanel extends JPanel {
 		resizeAndRepaintMap();
 	}
 
-	public void setSizeMap2(Building building) {
+	public void setMapFocusOn(Building building) {
 		final double focus_zoom = 3;
 		this.zoomLevel = focus_zoom;
 
@@ -449,7 +402,7 @@ public class MapPanel extends JPanel {
 		resizeAndRepaintMap();
 	}
 
-	public void setSizeMap2(Facility facility) {
+	public void setMapFocusOn(Facility facility) {
 		final double focus_zoom = 3;
 		this.zoomLevel = focus_zoom;
 
@@ -480,8 +433,9 @@ public class MapPanel extends JPanel {
 
 	public boolean checkUnUsableSpace(int x, int y) {
 		for (int[] a : unUsableSpace) {
-			if (a[2] == 0)
+			if (a[2] == 0) {
 				break; // size가 0인 것, 즉 더이상 객체가 없으면 순회 종료
+			}
 			if (a[0] <= x + pageWidth && x <= (a[0] + a[2])) {
 				if (a[1] <= y + pageHeight && y <= (a[1] + a[2])) {
 					return false;
@@ -492,74 +446,4 @@ public class MapPanel extends JPanel {
 	}
 
 
-
-	private Facility currentFacilityPage = null;
-	private int pageDrawX = 100; // 페이지가 그려질 X 좌표 (테스트용 초기값)
-	private int pageDrawY = 100; // 페이지가 그려질 Y 좌표 (테스트용 초기값)
-
-	private void drawFacilityPage(Graphics2D g2) {
-	    if (currentFacilityPage == null)
-	        return;
-
-	    final Facility f = currentFacilityPage;
-	    final int PADDING = 15; // 패딩 증가 (10 -> 15)로 여백 확보
-	    final int CORNER_RADIUS = 8; // 코너 반경 축소 (15 -> 8)
-
-	    // 배경 그리기 (크기는 pageWidth, pageHeight 사용)
-	    g2.setColor(new Color(255, 255, 255, 240)); // 불투명도 약간 증가 (220 -> 240)
-	    g2.fillRoundRect(pageDrawX, pageDrawY, pageWidth, pageHeight, CORNER_RADIUS, CORNER_RADIUS);
-
-	    // 테두리 그리기: 짙은 군청색/남색으로 변경하여 세련된 느낌 강조
-	    g2.setColor(new Color(44, 62, 80)); 
-	    g2.setStroke(new BasicStroke(2));
-	    g2.drawRoundRect(pageDrawX, pageDrawY, pageWidth, pageHeight, CORNER_RADIUS, CORNER_RADIUS);
-
-	    int currentY = pageDrawY + PADDING;
-	    int currentX = pageDrawX + PADDING;
-
-	    g2.setColor(Color.BLACK);
-
-	    // 1. ID와 Name 출력 (가장 크게 강조)
-	    g2.setFont(new Font("Dialog", Font.BOLD, 15)); // 크기 18 -> 20, 폰트 Dialog
-	    FontMetrics fm = g2.getFontMetrics();
-	    
-	    String idNameText = "ID: " + f.getId() + " " + f.getName();
-	    g2.drawString(idNameText, currentX, currentY + fm.getAscent());
-	    currentY += fm.getHeight() + PADDING;
-
-	    // 2. 가로줄 긋기: 더 짙은 회색으로 변경
-	    g2.setColor(new Color(150, 150, 150)); 
-	    g2.setStroke(new BasicStroke(1));
-	    g2.drawLine(pageDrawX + PADDING, currentY, pageDrawX + pageWidth - PADDING, currentY);
-	    currentY += PADDING;
-
-	    g2.setColor(Color.BLACK);
-	    
-	    // 3. buildingName과 floor 출력 (위치 정보)
-	    g2.setFont(new Font("Dialog", Font.BOLD, 13)); // 크기 14 -> 16, 폰트 Dialog
-	    fm = g2.getFontMetrics();
-	    
-	    String locationText = f.getBuildingName() + " " + f.getFloor() + "층";
-	    g2.drawString(locationText, currentX, currentY + fm.getAscent());
-	    currentY += fm.getHeight() + PADDING / 2;
-	    
-	    // 4. notice 출력 (가장 작은 크기로 유지)
-	    g2.setFont(new Font("SansSerif", Font.PLAIN, 11)); // 크기 12 -> 14로 약간 키움
-	    fm = g2.getFontMetrics();
-	    
-	    // "Notice:" 레이블을 회색으로 처리하여 본문과 구분
-	    g2.setColor(new Color(100, 100, 100)); // 회색
-	    String noticeLabel = "Notice: ";
-	    g2.drawString(noticeLabel, currentX, currentY + fm.getAscent());
-	    
-	    // 실제 notice 내용을 검은색으로 표시
-	    g2.setColor(Color.BLACK);
-	    String noticeContent = (f.getNotice() != null) ? f.getNotice() : "N/A";
-	    int contentX = currentX + fm.stringWidth(noticeLabel);
-	    g2.drawString(noticeContent, contentX, currentY + fm.getAscent());
-
-	    currentY += fm.getHeight() + PADDING;
-	}
-	
-	
 }

@@ -64,12 +64,12 @@ public class MapControllerImpl implements MapController {
 
     @Override
     public void focusOn(Building building) {
-    	this.mapPanel.setSizeMap2(building);
+    	this.mapPanel.setMapFocusOn(building);
     }
 
     @Override
     public void focusOn(Facility facility) {
-    	this.mapPanel.setSizeMap2(facility);
+    	this.mapPanel.setMapFocusOn(facility);
     }
 
     @Override
@@ -83,6 +83,6 @@ public class MapControllerImpl implements MapController {
     	this.mapPanel.setZoomLevel(1.05);
         this.mapPanel.setSizeMap(0, 0);
     }
-    
-    
+
+
 }
