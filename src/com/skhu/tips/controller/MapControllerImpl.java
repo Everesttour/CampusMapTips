@@ -64,21 +64,25 @@ public class MapControllerImpl implements MapController {
 
     @Override
     public void focusOn(Building building) {
-        // TODO
+    	this.mapPanel.setSizeMap2(building);
     }
 
     @Override
     public void focusOn(Facility facility) {
-        // TODO
+    	this.mapPanel.setSizeMap2(facility);
     }
 
     @Override
     public void switchToBuildingView() {
-        // TODO
+    	this.mapPanel.setZoomLevel(1.0);
+        this.mapPanel.setSizeMap(0, 0);
     }
 
     @Override
     public void switchToFacilityView() {
-        // TODO
+    	this.mapPanel.setZoomLevel(1.05);
+        this.mapPanel.setSizeMap(0, 0);
     }
+    
+    
 }
