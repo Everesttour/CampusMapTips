@@ -1,12 +1,14 @@
 // 김준
 package com.skhu.tips.view.map;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -26,7 +28,7 @@ import com.skhu.tips.model.entity.Facility;
 
 /**
  * @class MapPanel
- * @brief 지도 표시 + 줌/이동 + 아이콘 그리기 + 클릭 감지 (건물 아이콘 확대 적용)
+ * @brief 지도 표시 + 줌/이동 + 아이콘 그리기 + 모든 시설 간략 정보 팝업 표시
  */
 public class MapPanel extends JPanel {
 
@@ -57,17 +59,11 @@ public class MapPanel extends JPanel {
 	private final int scrollSensitivity = 1; // 마우스 휠 스크롤 감도 조절
 	private int flagScrol = 0;
 
-	// [수정됨] 건물 아이콘 크기 30 -> 45로 확대
 	private static final int BUILDING_ICON_SIZE = 35;
-
 	private static final int FACILITY_ICON_SIZE = 14;
+
 	private static final Color COLOR_BUILDING = new Color(65, 105, 225);
 	private static final Color COLOR_FACILITY = new Color(255, 105, 180);
-
-	private final int ICON_COUNT = 100; // 지도에 출력되는 모든 빌딩, 시설 아이콘 최대 갯수
-	private int unUsableSpace[][] = new int[ICON_COUNT][3]; // new 아이콘의 x좌표, y좌표, 사이즈
-	private final int pageWidth = 200;
-	private final int pageHeight = 120;
 
 	// =======================================================================
 	// --- 2. Constructor & Public API ---
@@ -75,6 +71,7 @@ public class MapPanel extends JPanel {
 
 	public MapPanel() {
 		super(null);
+		setBackground(new Color(240, 240, 240));
 
 		loadOriginalMapImage();
 		mapLabel = new JLabel();
@@ -109,35 +106,43 @@ public class MapPanel extends JPanel {
 
 	@Override
 	protected void paintChildren(Graphics g) {
-		super.paintChildren(g);
+		super.paintChildren(g); // 지도(JLabel) 그리기
 
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
 		drawIcons(g2);
+
+		// [수정됨] 모든 시설의 간략 정보 팝업 그리기 (시설 표시 모드일 때)
+		if (showFacilities) {
+			for (Facility f : facilityList) {
+				drawBriefPopup(g2, f);
+			}
+		}
 	}
 
 	private void drawIcons(Graphics2D g2) {
 		int currentMapWidth = mapLabel.getWidth();
-		int originalMapWidth = originalImage.getWidth(null);
+		int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 		double scaleRatio = (double) currentMapWidth / originalMapWidth;
 
-		// 시설 아이콘
-		int j = 13; // new
+		// 1. 시설 아이콘
 		if (showFacilities) {
-			g2.setColor(COLOR_FACILITY);
 			for (Facility f : facilityList) {
 				int x = mapX + (int) (f.getxLocation() * scaleRatio);
 				int y = mapY + (int) (f.getyLocation() * scaleRatio);
 				int offset = FACILITY_ICON_SIZE / 2;
+
+				g2.setColor(COLOR_FACILITY);
 				g2.fillOval(x - offset, y - offset, FACILITY_ICON_SIZE, FACILITY_ICON_SIZE);
 				g2.setColor(Color.WHITE);
+				g2.setStroke(new BasicStroke(1));
 				g2.drawOval(x - offset, y - offset, FACILITY_ICON_SIZE, FACILITY_ICON_SIZE);
-				g2.setColor(COLOR_FACILITY);
 			}
 		}
-		// 건물 아이콘
-		int i = 0; // new
+
+		// 2. 건물 아이콘
 		for (Building b : buildingList) {
 			g2.setColor(COLOR_BUILDING);
 			int x = mapX + (int) (b.getxLocation() * scaleRatio);
@@ -146,17 +151,119 @@ public class MapPanel extends JPanel {
 
 			g2.fillRoundRect(x - offset, y - offset, BUILDING_ICON_SIZE, BUILDING_ICON_SIZE, 12, 12);
 			g2.setColor(Color.WHITE);
-			g2.setStroke(new java.awt.BasicStroke(2));
+			g2.setStroke(new BasicStroke(2));
 			g2.drawRoundRect(x - offset, y - offset, BUILDING_ICON_SIZE, BUILDING_ICON_SIZE, 12, 12);
 
 			String idText = String.format("%02d", b.getId() % 100);
-			// [수정됨] 폰트 크기도 14 -> 16으로 살짝 키움
 			g2.setFont(new Font("SansSerif", Font.BOLD, 16));
 			FontMetrics fm = g2.getFontMetrics();
 			int textX = x - (fm.stringWidth(idText) / 2);
 			int textY = y + (fm.getAscent() - fm.getDescent() + fm.getLeading()) / 2;
 			g2.drawString(idText, textX, textY);
 		}
+	}
+
+	/**
+	 * @brief 시설 아이콘 우측에 연결된 간략 정보 팝업을 그립니다.
+	 */
+	private void drawBriefPopup(Graphics2D g2, Facility f) {
+		int currentMapWidth = mapLabel.getWidth();
+		int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
+		double scaleRatio = (double) currentMapWidth / originalMapWidth;
+
+		// 아이콘 중심 좌표
+		int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
+		int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
+
+		// 팝업 영역 계산 (크기 변경됨)
+		Rectangle bounds = calculatePopupBounds(iconX, iconY);
+		int popupX = bounds.x;
+		int popupY = bounds.y;
+		int popupWidth = bounds.width;
+		int popupHeight = bounds.height;
+		int arc = 15;
+
+		// --- 1. 연결 선 그리기 ---
+		// [수정됨] 선 색상을 아이콘과 동일한 핑크색으로 변경
+		g2.setColor(COLOR_FACILITY);
+		g2.setStroke(new BasicStroke(2));
+		g2.drawLine(iconX + (FACILITY_ICON_SIZE/2), iconY, popupX, iconY);
+
+		// --- 2. 팝업 배경 그리기 ---
+		g2.setColor(new Color(0, 0, 0, 50)); // 그림자
+		g2.fillRoundRect(popupX + 3, popupY + 3, popupWidth, popupHeight, arc, arc);
+
+		g2.setColor(Color.WHITE); // 배경
+		g2.fillRoundRect(popupX, popupY, popupWidth, popupHeight, arc, arc);
+
+		g2.setColor(new Color(200, 200, 200)); // 테두리
+		g2.setStroke(new BasicStroke(1));
+		g2.drawRoundRect(popupX, popupY, popupWidth, popupHeight, arc, arc);
+
+		// --- 3. 텍스트 내용 그리기 ---
+		int padding = 10;
+		int currentY = popupY + padding;
+
+		// 3-1. ID (원형 배지) & 이름
+		g2.setColor(COLOR_FACILITY);
+		g2.fillOval(popupX + padding, currentY, 20, 20);
+
+		g2.setColor(Color.WHITE);
+		g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+		String idStr = String.valueOf(f.getId());
+		FontMetrics fmId = g2.getFontMetrics();
+		g2.drawString(idStr,
+				popupX + padding + 10 - (fmId.stringWidth(idStr) / 2),
+				currentY + 14);
+
+		g2.setColor(Color.BLACK);
+		g2.setFont(new Font("SansSerif", Font.BOLD, 15));
+		g2.drawString(f.getName(), popupX + padding + 28, currentY + 15);
+
+		// [수정됨] 이름과 Overview 사이 간격 넓힘 (30 -> 35)
+		currentY += 35;
+
+		// 3-2. Overview
+		g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
+		g2.setColor(Color.DARK_GRAY);
+		String overview = f.getOverview();
+		// 너비가 줄어들었으므로 글자수 제한을 조금 더 타이트하게 조정 (18 -> 15)
+		if (overview != null && overview.length() > 15) {
+			overview = overview.substring(0, 15) + "...";
+		}
+		g2.drawString(overview != null ? overview : "-", popupX + padding, currentY);
+
+		// [수정됨] Overview와 Notice 사이 간격 넓힘 (20 -> 25)
+		currentY += 10;
+
+		// 3-3. Notice
+		g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+		g2.setColor(new Color(220, 20, 60));
+		String notice = f.getNotice();
+		if (notice != null && notice.length() > 18) {
+			notice = notice.substring(0, 18) + "...";
+		}
+		g2.drawString("📢 " + (notice != null ? notice : "-"), popupX + padding - 4, currentY + 5);
+
+		// 3-4. Detail Hint
+		g2.setFont(new Font("SansSerif", Font.ITALIC, 9));
+		g2.setColor(Color.GRAY);
+		g2.drawString("Detail >", popupX + popupWidth - 45, popupY + popupHeight - 8);
+	}
+
+	/**
+	 * @brief 아이콘 좌표를 기준으로 팝업의 영역을 계산합니다.
+	 */
+	private Rectangle calculatePopupBounds(int iconX, int iconY) {
+		// [수정됨] 크기 조정: 너비(200), 높이 축소(115 -> 95) - Notice 아래 여백 최소화
+		int popupWidth = 190;
+		int popupHeight = 80;
+		int lineLength = 30;   // 연결 선 길이
+
+		int popupX = iconX + lineLength;
+		int popupY = iconY - (popupHeight / 2);
+
+		return new Rectangle(popupX, popupY, popupWidth, popupHeight);
 	}
 
 	// =======================================================================
@@ -168,41 +275,58 @@ public class MapPanel extends JPanel {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				handleIconClick(e.getX(), e.getY());
-				System.out.println("좌표 : " + e.getX() + ", " + e.getY());
-
-                repaint(); // 페이지를 그리거나 지우기 위해 화면 갱신을 요청합니다.
-                System.out.println("출력완료");                // --- [테스트 로직 종료] ---
 			}
 		});
 	}
 
 	private void handleIconClick(int mouseX, int mouseY) {
 		int currentMapWidth = mapLabel.getWidth();
-		int originalMapWidth = originalImage.getWidth(null);
+		int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 		double scaleRatio = (double) currentMapWidth / originalMapWidth;
 
-		// 1. 시설 아이콘 클릭 확인
+		// 1. [수정됨] 모든 시설 팝업 클릭 확인
 		if (showFacilities) {
-			int radius = FACILITY_ICON_SIZE / 2;
-			for (Facility f : facilityList) {
-				int cx = mapX + (int) (f.getxLocation() * scaleRatio);
-				int cy = mapY + (int) (f.getyLocation() * scaleRatio);
+			// Z-order를 고려하여 역순(나중에 그려진 것이 위)으로 체크하는 것이 좋음
+			for (int i = facilityList.size() - 1; i >= 0; i--) {
+				Facility f = facilityList.get(i);
+				int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
+				int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
 
-				if (mouseX >= cx - radius && mouseX <= cx + radius && mouseY >= cy - radius && mouseY <= cy + radius) {
+				Rectangle bounds = calculatePopupBounds(iconX, iconY);
 
+				if (bounds.contains(mouseX, mouseY)) {
+					System.out.println("[MapPanel] 시설 팝업 클릭됨: " + f.getName());
 					mapController.onFacilityClicked(f);
 					return;
 				}
 			}
 		}
 
-		// 2. 건물 아이콘 클릭 확인
+		// 2. 시설 아이콘 클릭 확인
+		if (showFacilities) {
+			int radius = FACILITY_ICON_SIZE;
+			for (Facility f : facilityList) {
+				int cx = mapX + (int) (f.getxLocation() * scaleRatio);
+				int cy = mapY + (int) (f.getyLocation() * scaleRatio);
+
+				if (mouseX >= cx - radius && mouseX <= cx + radius &&
+					mouseY >= cy - radius && mouseY <= cy + radius) {
+
+					System.out.println("[MapPanel] 시설 아이콘 클릭됨: " + f.getName());
+					mapController.onFacilityClicked(f);
+					return;
+				}
+			}
+		}
+
+		// 3. 건물 아이콘 클릭 확인
 		int radius = BUILDING_ICON_SIZE / 2;
 		for (Building b : buildingList) {
 			int cx = mapX + (int) (b.getxLocation() * scaleRatio);
 			int cy = mapY + (int) (b.getyLocation() * scaleRatio);
 
-			if (mouseX >= cx - radius && mouseX <= cx + radius && mouseY >= cy - radius && mouseY <= cy + radius) {
+			if (mouseX >= cx - radius && mouseX <= cx + radius &&
+				mouseY >= cy - radius && mouseY <= cy + radius) {
 
 				mapController.onBuildingClicked(b);
 				return;
@@ -277,7 +401,7 @@ public class MapPanel extends JPanel {
 	// =======================================================================
 
 	private void resizeAndRepaintMap() {
-		if (getWidth() <= 0 || getHeight() <= 0) {
+		if (getWidth() <= 0 || getHeight() <= 0 || originalImage == null) {
 			return;
 		}
 
@@ -339,7 +463,6 @@ public class MapPanel extends JPanel {
 		}
 
 		if (previousState != showFacilities) {
-			System.out.println("[View] 시설 표시 모드: " + (showFacilities ? "ON" : "OFF"));
 			repaint();
 		}
 	}
@@ -351,12 +474,11 @@ public class MapPanel extends JPanel {
 				originalImage = ImageIO.read(file);
 			}
 		} catch (IOException e) {
-			// 무시
+			e.printStackTrace();
 		}
 	}
 
-	public void setSizeMap(int mouseX, int mouseY) { //
-
+	public void setSizeMap(int mouseX, int mouseY) {
 		double currentMapX = mapLabel.getX();
 		double currentMapY = mapLabel.getY();
 		double currentMapW = mapLabel.getWidth();
@@ -367,6 +489,11 @@ public class MapPanel extends JPanel {
 
 		int panelWidth = getWidth();
 		int panelHeight = getHeight();
+
+		if (originalImage == null) {
+			return;
+		}
+
 		int origW = originalImage.getWidth(null);
 		int origH = originalImage.getHeight(null);
 
@@ -387,6 +514,10 @@ public class MapPanel extends JPanel {
 		final double focus_zoom = 3;
 		this.zoomLevel = focus_zoom;
 
+		if (originalImage == null) {
+			return;
+		}
+
 		int panelWidth = getWidth();
 		int panelHeight = getHeight();
 		int origW = originalImage.getWidth(null);
@@ -406,6 +537,10 @@ public class MapPanel extends JPanel {
 		final double focus_zoom = 3;
 		this.zoomLevel = focus_zoom;
 
+		if (originalImage == null) {
+			return;
+		}
+
 		int panelWidth = getWidth();
 		int panelHeight = getHeight();
 		int origW = originalImage.getWidth(null);
@@ -423,27 +558,6 @@ public class MapPanel extends JPanel {
 
 	public void setZoomLevel(double level) {
 		this.zoomLevel = level;
+		checkVisibilityMode();
 	}
-
-	public void addUnUsableSpace(int index, int x, int y, int size) {
-		unUsableSpace[index][0] = x;
-		unUsableSpace[index][1] = y;
-		unUsableSpace[index][2] = size;
-	} // new unUsableSpace에 빌딩, 시설 아이콘 추가 메소드
-
-	public boolean checkUnUsableSpace(int x, int y) {
-		for (int[] a : unUsableSpace) {
-			if (a[2] == 0) {
-				break; // size가 0인 것, 즉 더이상 객체가 없으면 순회 종료
-			}
-			if (a[0] <= x + pageWidth && x <= (a[0] + a[2])) {
-				if (a[1] <= y + pageHeight && y <= (a[1] + a[2])) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-
 }
