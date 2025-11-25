@@ -41,6 +41,9 @@ public class MapPanel extends JPanel {
 	// 시설 아이콘 표시 기준 (1.05배 이상 확대 시)
 	private static final double FACILITY_VISIBLE_THRESHOLD = 1.05;
 
+	// [추가됨] 화면에 동시에 표시할 최대 팝업(간략 정보) 개수
+	private static final int MAX_VISIBLE_POPUPS = 8;
+
 	private JLabel mapLabel;
 	private Image originalImage;
 	private MapController mapController;
@@ -117,10 +120,37 @@ public class MapPanel extends JPanel {
 
 		drawIcons(g2);
 
-		// 모든 시설의 간략 정보 팝업 그리기 (시설 표시 모드일 때)
+		// [수정됨] 모든 시설의 간략 정보 팝업 그리기 (시설 표시 모드일 때)
+		// 화면에 보이는 아이콘 중 ID 순서대로 최대 8개까지만 표시
 		if (showFacilities) {
+			int popupCount = 0;
+			int panelWidth = getWidth();
+			int panelHeight = getHeight();
+
+			// 좌표 계산을 위한 비율 (drawIcons와 동일 로직)
+			int currentMapWidth = mapLabel.getWidth();
+			int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
+			double scaleRatio = (double) currentMapWidth / originalMapWidth;
+
 			for (Facility f : facilityList) {
-				drawBriefPopup(g2, f);
+				// 1. 현재 화면상 좌표 계산
+				int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
+				int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
+
+				// 2. 현재 아이콘이 화면 영역(패널) 안에 있는지 확인
+				// (완전히 밖으로 나간 것은 그리지 않음으로써 8개 카운트에서 제외)
+				if (iconX >= 0 && iconX <= panelWidth &&
+					iconY >= 0 && iconY <= panelHeight) {
+
+					// 3. 팝업 그리기
+					drawBriefPopup(g2, f);
+					popupCount++;
+
+					// 4. 최대 개수 도달 시 중단
+					if (popupCount >= MAX_VISIBLE_POPUPS) {
+						break;
+					}
+				}
 			}
 		}
 
@@ -321,8 +351,8 @@ public class MapPanel extends JPanel {
 	private Rectangle calculatePopupBounds(int iconX, int iconY, int panelWidth, int panelHeight) {
 		// [수정됨] 높이 증가 (95 -> 115) : 건물 위치 정보 라인 추가로 인한 확장
 		int popupWidth = 190;
-		int popupHeight = 95;
-		int margin = 30;   // 아이콘과의 거리
+		int popupHeight = 100;
+		int margin = 30;   // 아이콘 중심에서 팝업까지의 거리 (연결 선 길이)
 
 		// -----------------------------------------------------------------------
 		// TODO: [알고리즘 구현부] 여기서 위치를 결정하세요.
