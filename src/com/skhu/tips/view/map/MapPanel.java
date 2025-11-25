@@ -321,7 +321,7 @@ public class MapPanel extends JPanel {
 	private Rectangle calculatePopupBounds(int iconX, int iconY, int panelWidth, int panelHeight) {
 		// [수정됨] 높이 증가 (95 -> 115) : 건물 위치 정보 라인 추가로 인한 확장
 		int popupWidth = 190;
-		int popupHeight = 100;
+		int popupHeight = 95;
 		int margin = 30;   // 아이콘과의 거리
 
 		// -----------------------------------------------------------------------
