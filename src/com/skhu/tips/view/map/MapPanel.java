@@ -182,7 +182,7 @@ public class MapPanel extends JPanel {
 		int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
 		int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
 
-		// [수정됨] 팝업 영역 계산 (패널 크기 전달하여 알고리즘 적용 가능하게 함)
+		// 팝업 영역 계산 (패널 크기 전달하여 알고리즘 적용 가능하게 함)
 		Rectangle bounds = calculatePopupBounds(iconX, iconY, getWidth(), getHeight());
 		int popupX = bounds.x;
 		int popupY = bounds.y;
@@ -245,7 +245,7 @@ public class MapPanel extends JPanel {
 		g2.drawRoundRect(popupX, popupY, popupWidth, popupHeight, arc, arc);
 
 		// --- 3. 텍스트 내용 그리기 ---
-		int padding = 15;
+		int padding = 10;
 		int currentY = popupY + padding;
 
 		// 3-1. ID (원형 배지) & 이름
@@ -264,9 +264,30 @@ public class MapPanel extends JPanel {
 		g2.setFont(new Font("SansSerif", Font.BOLD, 14));
 		g2.drawString(f.getName(), popupX + padding + 28, currentY + 15);
 
-		currentY += 35;
+		currentY += 32;
 
-		// 3-2. Overview
+		// 3-2. [New] Location & Floor (건물명 + 층수)
+		g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+		g2.setColor(new Color(80, 80, 80)); // 짙은 회색
+
+		String buildingName = f.getBuildingName() != null ? f.getBuildingName() : "";
+		int floor = f.getFloor();
+		String floorStr = "";
+		if (floor > 0) {
+			floorStr = floor + "층";
+		} else if (floor < 0) {
+			floorStr = "B" + Math.abs(floor);
+		}
+
+		String locationText = buildingName + " " + floorStr;
+		if (locationText.length() > 22) {
+			locationText = locationText.substring(0, 22) + "...";
+		}
+		g2.drawString("📍 " + locationText.trim(), popupX + padding - 4, currentY);
+
+		currentY += 20;
+
+		// 3-3. Overview
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 12));
 		g2.setColor(Color.DARK_GRAY);
 		String overview = f.getOverview();
@@ -275,9 +296,9 @@ public class MapPanel extends JPanel {
 		}
 		g2.drawString(overview != null ? overview : "-", popupX + padding, currentY);
 
-		currentY += 25;
+		currentY += 10;
 
-		// 3-3. Notice
+		// 3-4. Notice
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
 		g2.setColor(new Color(220, 20, 60));
 		String notice = f.getNotice();
@@ -286,7 +307,7 @@ public class MapPanel extends JPanel {
 		}
 		g2.drawString("📢 " + (notice != null ? notice : "-"), popupX + padding - 4, currentY + 5);
 
-		// 3-4. Detail Hint
+		// 3-5. Detail Hint
 		g2.setFont(new Font("SansSerif", Font.ITALIC, 9));
 		g2.setColor(Color.LIGHT_GRAY);
 		g2.drawString("Detail >", popupX + popupWidth - 45, popupY + popupHeight - 8);
@@ -298,8 +319,9 @@ public class MapPanel extends JPanel {
 	 * 화면 경계를 벗어나는지 확인하고 위치를 조정하는 알고리즘을 작성할 수 있도록 변경했습니다.
 	 */
 	private Rectangle calculatePopupBounds(int iconX, int iconY, int panelWidth, int panelHeight) {
-		int popupWidth = 200;
-		int popupHeight = 95;
+		// [수정됨] 높이 증가 (95 -> 115) : 건물 위치 정보 라인 추가로 인한 확장
+		int popupWidth = 190;
+		int popupHeight = 100;
 		int margin = 30;   // 아이콘과의 거리
 
 		// -----------------------------------------------------------------------
@@ -311,6 +333,14 @@ public class MapPanel extends JPanel {
 		// 예시: 기본적으로 오른쪽에 배치
 		int popupX = iconX + margin;
 		int popupY = iconY - (popupHeight / 2);
+
+		/* [알고리즘 힌트]
+		if (popupX + popupWidth > panelWidth) {
+		    // 오른쪽 화면을 벗어나면 -> 왼쪽으로 배치
+		    popupX = iconX - margin - popupWidth;
+		}
+		// 위/아래 검사 로직 등 추가 가능
+		*/
 
 		return new Rectangle(popupX, popupY, popupWidth, popupHeight);
 	}
