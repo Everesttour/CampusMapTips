@@ -78,15 +78,18 @@ public class ButtonListCellRenderer<T> implements ListCellRenderer<Object> {
         // 데이터 추출
         String name = "";
         String description = "";
+        int id = 0;
         
         if (value instanceof Building) {
             Building building = (Building) value;
             name = building.getName();
             description = building.getDescription() != null ? building.getDescription() : "";
+            id = building.getId();
         } else if (value instanceof Facility) {
             Facility facility = (Facility) value;
             name = facility.getName();
             description = facility.getDescription() != null ? facility.getDescription() : "";
+            id = facility.getId();
         }
         
         // 텍스트 설정
@@ -105,8 +108,8 @@ public class ButtonListCellRenderer<T> implements ListCellRenderer<Object> {
         // 패널 배경색은 흰색으로 설정
         panel.setBackground(Color.WHITE);
         
-        // 원형 아이콘 생성 및 설정
-        String numberText = String.valueOf(index + 1);
+        // 원형 아이콘 생성 및 설정 (id 사용)
+        String numberText = String.valueOf(id);
         ImageIcon circleIcon = createCircleIcon(circleColor, numberText, 40);
         numberLabel.setIcon(circleIcon);
         
