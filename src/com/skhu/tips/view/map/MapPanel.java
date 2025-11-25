@@ -114,12 +114,15 @@ public class MapPanel extends JPanel {
 
 		drawIcons(g2);
 
-		// [수정됨] 모든 시설의 간략 정보 팝업 그리기 (시설 표시 모드일 때)
+		// 모든 시설의 간략 정보 팝업 그리기 (시설 표시 모드일 때)
 		if (showFacilities) {
 			for (Facility f : facilityList) {
 				drawBriefPopup(g2, f);
 			}
 		}
+
+		// 우측 상단 이용 가이드 표시 (항상 맨 위에 표시)
+				drawUsageGuide(g2);
 	}
 
 	private void drawIcons(Graphics2D g2) {
@@ -221,7 +224,7 @@ public class MapPanel extends JPanel {
 		g2.drawString(f.getName(), popupX + padding + 28, currentY + 15);
 
 		// [수정됨] 이름과 Overview 사이 간격 넓힘 (30 -> 35)
-		currentY += 35;
+		currentY += 38;
 
 		// 3-2. Overview
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
@@ -265,6 +268,56 @@ public class MapPanel extends JPanel {
 
 		return new Rectangle(popupX, popupY, popupWidth, popupHeight);
 	}
+
+	/**
+	 * @brief [추가됨] 지도 우측 상단에 이용 가이드 문구를 표시합니다.
+	 */
+	private void drawUsageGuide(Graphics2D g2) {
+		// 안내 문구 내용
+		String title = "💡 이용 가이드";
+		String line1 = "- 스크롤하여 확대하면 시설 정보 확인 가능";
+		String line2 = "- 아이콘을 클릭하여 상세 정보 확인";
+
+		// 폰트 설정
+		g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+		FontMetrics fm = g2.getFontMetrics();
+
+		// 박스 크기 계산
+		int maxWidth = Math.max(fm.stringWidth(title), Math.max(fm.stringWidth(line1), fm.stringWidth(line2)));
+		int padding = 15;
+		int lineHeight = fm.getHeight() + 5;
+
+		int boxWidth = maxWidth + (padding * 2);
+		int boxHeight = (lineHeight * 3) + (padding * 2) - 10;
+
+		// 위치 계산 (우측 상단, 마진 20px)
+		int x = getWidth() - boxWidth - 20;
+		int y = 20;
+
+		// 1. 반투명 배경 박스
+		g2.setColor(new Color(0, 0, 0, 180)); // 검은색, 투명도 180
+		g2.fillRoundRect(x, y, boxWidth, boxHeight, 15, 15);
+
+		// 2. 텍스트 그리기
+		g2.setColor(Color.WHITE);
+		int textX = x + padding;
+		int textY = y + padding + fm.getAscent();
+
+		// 타이틀 (노란색 강조)
+		g2.setColor(new Color(255, 215, 0)); // Gold
+		g2.drawString(title, textX, textY);
+
+		// 내용 (흰색)
+		g2.setColor(Color.WHITE);
+		g2.setFont(new Font("SansSerif", Font.PLAIN, 12)); // 내용은 일반 굵기
+
+		textY += lineHeight;
+		g2.drawString(line1, textX, textY);
+
+		textY += lineHeight;
+		g2.drawString(line2, textX, textY);
+	}
+
 
 	// =======================================================================
 	// --- 4. Setup Methods ---
