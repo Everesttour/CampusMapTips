@@ -334,13 +334,6 @@ public class MapPanel extends JPanel {
 		int popupX = iconX + margin;
 		int popupY = iconY - (popupHeight / 2);
 
-		/* [알고리즘 힌트]
-		if (popupX + popupWidth > panelWidth) {
-		    // 오른쪽 화면을 벗어나면 -> 왼쪽으로 배치
-		    popupX = iconX - margin - popupWidth;
-		}
-		// 위/아래 검사 로직 등 추가 가능
-		*/
 
 		return new Rectangle(popupX, popupY, popupWidth, popupHeight);
 	}
