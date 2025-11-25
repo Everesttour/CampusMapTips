@@ -28,7 +28,7 @@ import com.skhu.tips.model.entity.Facility;
 
 /**
  * @class MapPanel
- * @brief 지도 표시 + 줌/이동 + 아이콘 그리기 + 모든 시설 간략 정보 팝업 표시
+ * @brief 지도 표시 + 줌/이동 + 아이콘 그리기 + 모든 시설 간략 정보 팝업 표시 + 이용 가이드
  */
 public class MapPanel extends JPanel {
 
@@ -64,6 +64,9 @@ public class MapPanel extends JPanel {
 
 	private static final Color COLOR_BUILDING = new Color(65, 105, 225);
 	private static final Color COLOR_FACILITY = new Color(255, 105, 180);
+
+	// --- 간략 정보(말풍선) 관련 필드 ---
+	private Facility selectedFacility = null; // 현재 선택되어 간략 정보를 보여줄 시설 (클릭 이동용)
 
 	// =======================================================================
 	// --- 2. Constructor & Public API ---
@@ -122,7 +125,7 @@ public class MapPanel extends JPanel {
 		}
 
 		// 우측 상단 이용 가이드 표시 (항상 맨 위에 표시)
-				drawUsageGuide(g2);
+		drawUsageGuide(g2);
 	}
 
 	private void drawIcons(Graphics2D g2) {
@@ -167,7 +170,8 @@ public class MapPanel extends JPanel {
 	}
 
 	/**
-	 * @brief 시설 아이콘 우측에 연결된 간략 정보 팝업을 그립니다.
+	 * @brief 시설 아이콘에 연결된 간략 정보 팝업을 그립니다.
+	 * 팝업의 위치에 따라 연결 선을 자동으로 조정합니다.
 	 */
 	private void drawBriefPopup(Graphics2D g2, Facility f) {
 		int currentMapWidth = mapLabel.getWidth();
@@ -178,19 +182,56 @@ public class MapPanel extends JPanel {
 		int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
 		int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
 
-		// 팝업 영역 계산 (크기 변경됨)
-		Rectangle bounds = calculatePopupBounds(iconX, iconY);
+		// [수정됨] 팝업 영역 계산 (패널 크기 전달하여 알고리즘 적용 가능하게 함)
+		Rectangle bounds = calculatePopupBounds(iconX, iconY, getWidth(), getHeight());
 		int popupX = bounds.x;
 		int popupY = bounds.y;
 		int popupWidth = bounds.width;
 		int popupHeight = bounds.height;
 		int arc = 15;
 
-		// --- 1. 연결 선 그리기 ---
-		// [수정됨] 선 색상을 아이콘과 동일한 핑크색으로 변경
+		// --- 1. 연결 선 그리기 (자동 방향 감지) ---
 		g2.setColor(COLOR_FACILITY);
 		g2.setStroke(new BasicStroke(2));
-		g2.drawLine(iconX + (FACILITY_ICON_SIZE/2), iconY, popupX, iconY);
+
+		// 팝업의 중심점
+		double popupCenterX = bounds.getCenterX();
+		double popupCenterY = bounds.getCenterY();
+
+		int startX = iconX;
+		int startY = iconY;
+		int endX = iconX;
+		int endY = iconY;
+
+		// 가로 거리가 세로 거리보다 멀면 좌/우 배치로 간주
+		if (Math.abs(popupCenterX - iconX) > Math.abs(popupCenterY - iconY)) {
+			// 수평 연결
+			startY = iconY;
+			// 선 끝점이 팝업 박스 높이 범위를 벗어나지 않도록 클램핑
+			endY = Math.max(popupY, Math.min(popupY + popupHeight, iconY));
+
+			if (popupCenterX > iconX) { // 팝업이 오른쪽
+				startX = iconX + (FACILITY_ICON_SIZE / 2);
+				endX = popupX;
+			} else { // 팝업이 왼쪽
+				startX = iconX - (FACILITY_ICON_SIZE / 2);
+				endX = popupX + popupWidth;
+			}
+		} else {
+			// 수직 연결
+			startX = iconX;
+			endX = Math.max(popupX, Math.min(popupX + popupWidth, iconX));
+
+			if (popupCenterY > iconY) { // 팝업이 아래
+				startY = iconY + (FACILITY_ICON_SIZE / 2);
+				endY = popupY;
+			} else { // 팝업이 위
+				startY = iconY - (FACILITY_ICON_SIZE / 2);
+				endY = popupY + popupHeight;
+			}
+		}
+
+		g2.drawLine(startX, startY, endX, endY);
 
 		// --- 2. 팝업 배경 그리기 ---
 		g2.setColor(new Color(0, 0, 0, 50)); // 그림자
@@ -204,7 +245,7 @@ public class MapPanel extends JPanel {
 		g2.drawRoundRect(popupX, popupY, popupWidth, popupHeight, arc, arc);
 
 		// --- 3. 텍스트 내용 그리기 ---
-		int padding = 10;
+		int padding = 15;
 		int currentY = popupY + padding;
 
 		// 3-1. ID (원형 배지) & 이름
@@ -220,24 +261,21 @@ public class MapPanel extends JPanel {
 				currentY + 14);
 
 		g2.setColor(Color.BLACK);
-		g2.setFont(new Font("SansSerif", Font.BOLD, 15));
+		g2.setFont(new Font("SansSerif", Font.BOLD, 14));
 		g2.drawString(f.getName(), popupX + padding + 28, currentY + 15);
 
-		// [수정됨] 이름과 Overview 사이 간격 넓힘 (30 -> 35)
-		currentY += 38;
+		currentY += 35;
 
 		// 3-2. Overview
-		g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
+		g2.setFont(new Font("SansSerif", Font.PLAIN, 12));
 		g2.setColor(Color.DARK_GRAY);
 		String overview = f.getOverview();
-		// 너비가 줄어들었으므로 글자수 제한을 조금 더 타이트하게 조정 (18 -> 15)
 		if (overview != null && overview.length() > 15) {
 			overview = overview.substring(0, 15) + "...";
 		}
 		g2.drawString(overview != null ? overview : "-", popupX + padding, currentY);
 
-		// [수정됨] Overview와 Notice 사이 간격 넓힘 (20 -> 25)
-		currentY += 10;
+		currentY += 25;
 
 		// 3-3. Notice
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
@@ -250,27 +288,43 @@ public class MapPanel extends JPanel {
 
 		// 3-4. Detail Hint
 		g2.setFont(new Font("SansSerif", Font.ITALIC, 9));
-		g2.setColor(Color.GRAY);
+		g2.setColor(Color.LIGHT_GRAY);
 		g2.drawString("Detail >", popupX + popupWidth - 45, popupY + popupHeight - 8);
 	}
 
 	/**
 	 * @brief 아이콘 좌표를 기준으로 팝업의 영역을 계산합니다.
+	 * [수정됨] 패널 크기 정보(panelWidth, panelHeight)를 인자로 추가하여
+	 * 화면 경계를 벗어나는지 확인하고 위치를 조정하는 알고리즘을 작성할 수 있도록 변경했습니다.
 	 */
-	private Rectangle calculatePopupBounds(int iconX, int iconY) {
-		// [수정됨] 크기 조정: 너비(200), 높이 축소(115 -> 95) - Notice 아래 여백 최소화
-		int popupWidth = 190;
-		int popupHeight = 80;
-		int lineLength = 30;   // 연결 선 길이
+	private Rectangle calculatePopupBounds(int iconX, int iconY, int panelWidth, int panelHeight) {
+		int popupWidth = 200;
+		int popupHeight = 95;
+		int margin = 30;   // 아이콘과의 거리
 
-		int popupX = iconX + lineLength;
+		// -----------------------------------------------------------------------
+		// TODO: [알고리즘 구현부] 여기서 위치를 결정하세요.
+		// iconX, iconY: 아이콘의 현재 화면상 중심 좌표
+		// panelWidth, panelHeight: 전체 패널(화면) 크기
+		// -----------------------------------------------------------------------
+
+		// 예시: 기본적으로 오른쪽에 배치
+		int popupX = iconX + margin;
 		int popupY = iconY - (popupHeight / 2);
+
+		/* [알고리즘 힌트]
+		if (popupX + popupWidth > panelWidth) {
+		    // 오른쪽 화면을 벗어나면 -> 왼쪽으로 배치
+		    popupX = iconX - margin - popupWidth;
+		}
+		// 위/아래 검사 로직 등 추가 가능
+		*/
 
 		return new Rectangle(popupX, popupY, popupWidth, popupHeight);
 	}
 
 	/**
-	 * @brief [추가됨] 지도 우측 상단에 이용 가이드 문구를 표시합니다.
+	 * @brief 지도 우측 상단에 이용 가이드 문구를 표시합니다.
 	 */
 	private void drawUsageGuide(Graphics2D g2) {
 		// 안내 문구 내용
@@ -318,7 +372,6 @@ public class MapPanel extends JPanel {
 		g2.drawString(line2, textX, textY);
 	}
 
-
 	// =======================================================================
 	// --- 4. Setup Methods ---
 	// =======================================================================
@@ -337,15 +390,15 @@ public class MapPanel extends JPanel {
 		int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 		double scaleRatio = (double) currentMapWidth / originalMapWidth;
 
-		// 1. [수정됨] 모든 시설 팝업 클릭 확인
+		// 1. 모든 시설 팝업 클릭 확인
 		if (showFacilities) {
-			// Z-order를 고려하여 역순(나중에 그려진 것이 위)으로 체크하는 것이 좋음
 			for (int i = facilityList.size() - 1; i >= 0; i--) {
 				Facility f = facilityList.get(i);
 				int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
 				int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
 
-				Rectangle bounds = calculatePopupBounds(iconX, iconY);
+				// [수정됨] 패널 크기 전달
+				Rectangle bounds = calculatePopupBounds(iconX, iconY, getWidth(), getHeight());
 
 				if (bounds.contains(mouseX, mouseY)) {
 					System.out.println("[MapPanel] 시설 팝업 클릭됨: " + f.getName());
@@ -607,6 +660,8 @@ public class MapPanel extends JPanel {
 
 		checkVisibilityMode();
 		resizeAndRepaintMap();
+
+		this.selectedFacility = facility;
 	}
 
 	public void setZoomLevel(double level) {
