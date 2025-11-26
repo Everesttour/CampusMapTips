@@ -14,11 +14,14 @@ public class Facility {
     private String notice;
     private String operatingHours;
     private String[] tips;
+    private int priority;
+    private int currentX;
+    private int currentY;
 
     public Facility() {}
 
 	public Facility(int id, double xLocation, double yLocation, int floor, String name, String buildingName,
-			String overview, String description, String notice, String operatingHours, String[] tips) {
+			String overview, String description, String notice, String operatingHours, String[] tips, int priority, int currentX, int currentY) {
 		super();
 		this.id = id;
 		this.xLocation = xLocation;
@@ -31,6 +34,9 @@ public class Facility {
 		this.notice = notice;
 		this.operatingHours = operatingHours;
 		this.tips = tips;
+		this.priority = priority;
+		this.currentX = currentX;
+		this.currentY = currentY;
 	}
 
 	public int getId() {
@@ -120,5 +126,28 @@ public class Facility {
 	public void setTips(String[] tips) {
 		this.tips = tips;
 	}
+	
+	public int getPriority() {
+		return priority;
+	}
+	
+	public void setPriority(int priority) {
+		this.priority = priority;
+	}
 
+	public int getCurrentX() {
+		return currentX;
+	}
+	
+	public void setCurrentX(int currentX) {
+		this.currentX = currentX;
+	}
+	
+	public int getCurrentY() {
+		return currentY;
+	}
+	
+	public void setCurrentY(int currentY) {
+		this.currentY = currentY;
+	}
 }
