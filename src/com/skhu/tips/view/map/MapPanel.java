@@ -69,6 +69,9 @@ public class MapPanel extends JPanel {
 	private static final int FACILITY_ICON_SIZE = 14;
 	private static final int DEFAULT_BUILDING_ICON_SIZE = 35;
 	private static int buildingIconSize = DEFAULT_BUILDING_ICON_SIZE;
+	
+	private static final int INFO_ICON_SIZE = 30; // INFO 아이콘의 지름
+	private static final int INFO_ICON_PADDING = 10; // INFO 좌측 및 상단 여백
 
 	private static final Color COLOR_BUILDING = new Color(65, 105, 225);
 	private static final Color COLOR_FACILITY = new Color(255, 105, 180);
@@ -198,6 +201,8 @@ public class MapPanel extends JPanel {
 
 		// 우측 상단 이용 가이드 표시 (항상 맨 위에 표시)
 		drawUsageGuide(g2);
+		
+		drawInfoIcon(g2);
 	}
 
 	private void drawIcons(Graphics2D g2) {
@@ -516,6 +521,52 @@ public class MapPanel extends JPanel {
 		g2.drawString(line2, textX, textY);
 
 	}
+	
+	/**
+	 * @brief 좌측 최상단에 고정된 정보 아이콘 (동그라미 내부에 'i')을 그립니다.
+	 * @param g2 렌더링할 Graphics2D 객체
+	 */
+	private void drawInfoIcon(Graphics2D g2) {
+	    // 1. 아이콘 크기 및 위치 고정 (맵 크기 변화와 무관)
+	    final int ICON_SIZE = 30; // 아이콘의 지름 (px)
+	    final int PADDING = 10;   // 좌측 및 상단 여백 (px)
+
+	    int x = PADDING;
+	    int y = PADDING;
+
+	    // 폰트 설정
+	    Font originalFont = g2.getFont(); // 원래 폰트 저장
+	    Font iconFont = new Font("Arial", Font.BOLD, ICON_SIZE - 10); // 'i' 글자 크기 조정
+	    
+	    // 렌더링 힌트 (텍스트 부드럽게)
+	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+	    // 2. 동그라미 그리기
+	    g2.setColor(new Color(60, 140, 220)); // 파란색 계열
+	    g2.fillOval(x, y, ICON_SIZE, ICON_SIZE); // 채워진 동그라미
+
+	    // 3. 'i' 문자 그리기
+	    g2.setColor(Color.WHITE); // 흰색 글자
+	    g2.setFont(iconFont);
+
+	    // 텍스트 중앙 정렬을 위한 메트릭 계산
+	    FontMetrics fm = g2.getFontMetrics(iconFont);
+	    String infoText = "i";
+	    int textWidth = fm.stringWidth(infoText);
+	    int textHeight = fm.getHeight();
+	    
+	    // 텍스트 위치 계산 (동그라미 중앙)
+	    int textX = x + (ICON_SIZE - textWidth) / 2;
+	    int textY = y + (ICON_SIZE - textHeight) / 2 + fm.getAscent(); // baseline 조정
+
+	    g2.drawString(infoText, textX, textY);
+	    
+	    // 4. 원래 폰트 및 렌더링 힌트 복원
+	    g2.setFont(originalFont);
+	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+	    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+	}
 
 	// =======================================================================
 	// --- 4. Setup Methods ---
@@ -535,6 +586,11 @@ public class MapPanel extends JPanel {
 		int currentMapWidth = mapLabel.getWidth();
 		int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 		double scaleRatio = (double) currentMapWidth / originalMapWidth;
+		
+		final int x = INFO_ICON_PADDING;
+	    final int y = INFO_ICON_PADDING;
+	    final int size = INFO_ICON_SIZE;
+	    Rectangle infoIconBounds = new Rectangle(x, y, size, size);
 
 		// 1. 모든 시설 팝업 클릭 확인
 		if (showFacilities) {
@@ -583,6 +639,14 @@ public class MapPanel extends JPanel {
 				return;
 			}
 		}
+		
+		
+		// 4. AppInfo 아이콘 클릭 확인
+		if (infoIconBounds.contains(mouseX, mouseY)) {
+	        System.out.println("[MapPanel] 앱 정보 아이콘 클릭됨.");
+	        mapController.onAppInfoClicked();
+	        return; // 클릭 이벤트 처리 완료 후 종료
+	    }
 	}
 
 	private void setupMouseWheelListener() {
