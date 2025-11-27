@@ -54,4 +54,9 @@ public interface MapController {
      * @brief 지도에서 시설이 클릭되었을 때 호출됩니다.
      */
     void onFacilityClicked(Facility facility);
+    
+    /**
+     * @brief 지도에서 앱정보 버튼이 클릭되었을 때 호출됩니다.
+     */
+    void onAppInfoClicked();
 }

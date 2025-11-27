@@ -26,6 +26,11 @@ public interface PanelController {
      * @brief 시설 상세 정보 팝업창을 엽니다.
      */
     void openFacilityDetail(Facility facility);
+    
+    /**
+     * @brief 앱 정보 팝업창을 엽니다.
+     */
+    void openAppInfoDetail();
 
     // --- [개선된 DI 패턴 적용] ---
 

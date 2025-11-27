@@ -2,19 +2,17 @@ package com.skhu.tips.controller;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 import javax.imageio.ImageIO;
-
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -26,6 +24,7 @@ import javax.swing.SwingWorker;
 import com.skhu.tips.model.entity.Building;
 import com.skhu.tips.model.entity.Facility;
 import com.skhu.tips.model.service.DataService; // (DataServiceImpl이 아닌 인터페이스)
+import com.skhu.tips.view.panel.AppInfoPanel;
 import com.skhu.tips.view.panel.BuildingDetailPanel;
 import com.skhu.tips.view.panel.FacilityDetailPanel;
 import com.skhu.tips.view.panel.MainLeftPanel;
@@ -43,10 +42,12 @@ public class PanelControllerImpl implements PanelController {
     // 디테일 패널들
     private BuildingDetailPanel buildingDetailPanel;
     private FacilityDetailPanel facilityDetailPanel;
+    private AppInfoPanel appInfoPanel; // AppInfoPanel 추가
     
     // 디테일 패널 컨테이너 (JLayeredPane에 추가될 패널)
     private JPanel buildingDetailContainer;
     private JPanel facilityDetailContainer;
+    private JPanel appInfoContainer; // 컨테이너 추가
     
     // 이미지 라벨 (패널과 분리)
     private JLabel buildingImageLabel;
@@ -79,8 +80,9 @@ public class PanelControllerImpl implements PanelController {
         this.mapController = mapController;
         
         // 디테일 패널 초기화
-        buildingDetailPanel = new BuildingDetailPanel();
-        facilityDetailPanel = new FacilityDetailPanel();
+        buildingDetailPanel = new BuildingDetailPanel(); //
+        facilityDetailPanel = new FacilityDetailPanel(); //
+        appInfoPanel = new AppInfoPanel(); // AppInfoPanel 초기화 추가
     }
 
     /**
@@ -447,6 +449,101 @@ public class PanelControllerImpl implements PanelController {
             setBackgroundDim(parentFrame, false, null);
         }
     }
+    
+    
+    
+    
+    @Override
+    public void openAppInfoDetail() {
+        // 부모 프레임 찾기 (buildingDetailPanel과 동일한 로직)
+        if (parentFrame == null) {
+            parentFrame = (JFrame) javax.swing.SwingUtilities.getWindowAncestor(mainLeftPanel);
+            setupResizeListener(); // 프레임 크기 변경 리스너 등록 (필요 시)
+        }
+        
+        // 컨테이너가 없으면 새로 생성
+        if (appInfoContainer == null || !appInfoContainer.isVisible()) {
+            createAppInfoContainer();
+        }
+        
+        // *필요에 따라* 다른 상세 패널이 열려있다면 닫는 로직 추가 가능
+        // 예: closeBuildingDetail(); closeFacilityDetail();
+        
+        // 배경 어둡게 만들기 (dim Layer 표시)
+        setBackgroundDim(parentFrame, true, appInfoContainer); //
+        
+        // 컨테이너 표시 및 레이어 순서 조정 (가장 위로)
+        appInfoContainer.setVisible(true);
+        JComponent glassPane = (JComponent) parentFrame.getGlassPane(); //
+        glassPane.setComponentZOrder(appInfoContainer, 0); 
+        parentFrame.revalidate();
+        parentFrame.repaint();
+    }
+    
+    private void createAppInfoContainer() {
+        if (parentFrame == null) return;
+        
+        appInfoContainer = new JPanel(null); // null 레이아웃 사용
+        appInfoContainer.setOpaque(false); // 투명 배경
+        appInfoContainer.setBounds(0, 0, parentFrame.getWidth(), parentFrame.getHeight());
+        
+        // 패널 크기 및 위치 설정 (예시: BuildingDetailPanel의 패널 크기 900x600을 참고)
+        int panelWidth = 800; 
+        int panelHeight = 650; 
+        
+        // 화면 중앙 정렬 위치 계산
+        int x = (parentFrame.getWidth() - panelWidth) / 2;
+        int y = (parentFrame.getHeight() - panelHeight) / 2;
+        
+        // AppInfoPanel 배치
+        appInfoPanel.setBounds(x, y, panelWidth, panelHeight);
+        appInfoContainer.add(appInfoPanel);
+        
+        // 1. 패널 내부 클릭 시 이벤트 소비 (팝업창 닫힘 방지)
+        appInfoPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                e.consume(); 
+            }
+        });
+        
+        // 2. 배경 클릭 시 닫기 (BuildingDetailContainer와 동일)
+        appInfoContainer.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                java.awt.Point point = e.getPoint();
+                // AppInfoPanel 영역이 아닌 곳을 클릭한 경우
+                if (!appInfoPanel.getBounds().contains(point)) {
+                    closeAppInfoDetail();
+                }
+            }
+        });
+        
+        // GlassPane에 추가
+        JComponent glassPane = (JComponent) parentFrame.getGlassPane();
+        glassPane.setLayout(null);
+        glassPane.add(appInfoContainer);
+    }
+    
+
+    /**
+     * 앱 정보 팝업창을 닫습니다.
+     */
+    private void closeAppInfoDetail() {
+        if (appInfoContainer != null && appInfoContainer.isVisible()) {
+            appInfoContainer.setVisible(false);
+            setBackgroundDim(parentFrame, false, appInfoContainer); // 배경 복원
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     /**
      * 창 크기 변경 리스너 설정 (한 번만 등록)
@@ -473,6 +570,9 @@ public class PanelControllerImpl implements PanelController {
                 }
                 if (facilityDetailContainer != null && facilityDetailContainer.isVisible()) {
                     updateContainerSize(facilityDetailContainer, facilityDetailPanel);
+                }
+                if (appInfoContainer != null && appInfoContainer.isVisible()) {
+                    updateContainerSize(appInfoContainer, appInfoPanel);
                 }
             }
         });

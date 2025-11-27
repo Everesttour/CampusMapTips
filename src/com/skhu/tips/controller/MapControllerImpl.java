@@ -57,6 +57,12 @@ public class MapControllerImpl implements MapController {
         // 체크 없이 바로 호출
         panelController.openFacilityDetail(facility);
     }
+    
+    @Override
+    public void onAppInfoClicked()	{
+    	System.out.println("[MapController] 앱 정보 클릭됨.");
+        panelController.openAppInfoDetail();
+    }
 
     // =======================================================================
     // --- 3. Business Logic ---
