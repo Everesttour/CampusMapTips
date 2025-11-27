@@ -230,26 +230,22 @@
     "currentX": 0,
     "currentY": 0
   },
-  {
+    {
     "id": 12,
-    "xLocation": 390.0,
-    "yLocation": 750.0,
-    "floor": -1,
-    "name": "이마트편의점",
-    "buildingName": "새천년관(인문사회관)",
-    "overview": "편의시설",
-    "description": "간단한 생필품, 음료, 간식 구입 가능.",
-    "notice": "카드 결제 여부 확인",
-    "operatingHours": "평일 08:00 ~ 14:00 이후 저녁까지 무인 운영(종종 그냥 닫혀 있기도 함)",
+    "xLocation": 981,
+    "yLocation": 487,
+    "floor": 1,
+    "name": "열람실",
+    "buildingName": "월당관",
+    "overview": "조용히 공부 가능",
+    "description": "도서관 예약 시스템에서 예약 가능합니다.",
+    "notice": "학생증 혹은 모바일 도서관증 필요",
+    "operatingHours": "",
     "tips": [
-      "카드, 현금, 모바일 결제 가능 여부를 미리 확인하면 편리합니다.",
-      "사람들이 많을 수 있으므로 개인 소지품을 잘 챙기세요.",
-      "",
-      null
-    ],
-    "priority": 12,
-    "currentX": 0,
-    "currentY": 0
+	"열람실에서는 조용해야 하며, 일부 좌석은 키보드도 사용 금지입니다.",
+	"예약 좌석은 도서관 예약 시스템에서 예약 가능합니다."
+
+    ]
   },
   {
     "id": 13,
@@ -526,8 +522,8 @@
   },
   {
     "id": 26,
-    "xLocation": 1200.0,
-    "yLocation": 950.0,
+    "xLocation": 1117.0,
+    "yLocation": 169.0,
     "floor": 1,
     "name": "뒷산 산책로",
     "buildingName": "건지산",
@@ -548,8 +544,8 @@
   },
   {
     "id": 27,
-    "xLocation": 1300.0,
-    "yLocation": 950.0,
+    "xLocation": 1543.0,
+    "yLocation": 219.0,
     "floor": 1,
     "name": "푸른수목원",
     "buildingName": "",
@@ -565,5 +561,37 @@
     "priority": 27,
     "currentX": 0,
     "currentY": 0
+  },
+  {
+    "id": 28,
+    "xLocation": 468,
+    "yLocation": 575,
+    "floor": 1,
+    "name": "세미나룸",
+    "buildingName": "도서관",
+    "overview": "조용히 대화 가능한 3가지 세미나실",
+    "description": "2~6인실 두 개와 2~14인실 하나로 이루어져 있으며 각각 다른 형태로 좌석이 배치되어 있습니다. 조용히 대화 가능하며 홈페이지/앱에서 예약 후 사용 가능합니다. 음식물 반입 불가",
+    "notice": "홈페이지/앱에서 예약",
+    "operatingHours": "",
+    "tips": [
+	"적당한 대화가 필요할 때 카페 대신 도서관에서 무료로 이용 가능한 점이 좋아요.",
+	"전날부터 예약하는 게 좋아요",
+	"입구에서 한 층 내려가면 있어요"
+    ]
+  },
+  {
+    "id": 29,
+    "xLocation": 342,
+    "yLocation": 507,
+    "floor": 1,
+    "name": "시네마 스페이스",
+    "buildingName": "도서관",
+    "overview": "2~16인실, 영화관처럼 비디오 관람",
+    "description": "2~16인실, 영화관처럼 비디오 관람",
+    "notice": "홈페이지/앱에서 예약",
+    "operatingHours": "",
+    "tips": [
+	"은근히 예약이 차있는 경우가 많아서 미리 예약하세요."
+    ]
   }
 ]

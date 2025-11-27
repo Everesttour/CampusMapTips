@@ -55,6 +55,17 @@ public class MapPanel extends JPanel {
 
 	private List<Rectangle> drawnPopupBounds = new ArrayList<>(); // 김준 팝업들이 그려지면 여기에 추가.
 
+	// [1. 추가] 팝업의 클릭 영역(Bounds)과 시설 정보를 묶어 저장할 클래스와 리스트
+	private class PopupHitbox {
+        Rectangle bounds;
+        Facility facility;
+        public PopupHitbox(Rectangle bounds, Facility facility) {
+            this.bounds = bounds;
+            this.facility = facility;
+        }
+    }
+	private List<PopupHitbox> currentPopupHitboxes = new ArrayList<>();
+
 	private double zoomLevel = 1.0;
 	private boolean showFacilities = false;
 
@@ -69,14 +80,14 @@ public class MapPanel extends JPanel {
 	private static final int FACILITY_ICON_SIZE = 14;
 	private static final int DEFAULT_BUILDING_ICON_SIZE = 35;
 	private static int buildingIconSize = DEFAULT_BUILDING_ICON_SIZE;
-	
+
 	private static final int INFO_ICON_SIZE = 30; // INFO 아이콘의 지름
 	private static final int INFO_ICON_PADDING = 10; // INFO 좌측 및 상단 여백
 
 	private static final Color COLOR_BUILDING = new Color(65, 105, 225);
 	private static final Color COLOR_FACILITY = new Color(255, 105, 180);
 
-	private static final int BLANK_SPACE = 10; // 팝업간의 간격, 10*2 = 20칸
+	private static final int BLANK_SPACE = 2; // 팝업간의 간격, 10*2 = 20칸
 
 	// --- 간략 정보(말풍선) 관련 필드 ---
 	private Facility selectedFacility = null; // 현재 선택되어 간략 정보를 보여줄 시설 (클릭 이동용)
@@ -124,15 +135,19 @@ public class MapPanel extends JPanel {
 	protected void paintChildren(Graphics g) {
 		super.paintChildren(g); // 지도(JLabel) 그리기
 
+		// [2. 추가] 매번 그리기 전에 기존 Hitbox 리스트 초기화
+        currentPopupHitboxes.clear();
+        drawnPopupBounds.clear(); // (기존에 있던 clear는 여기서 같이 처리)
+
 		Graphics2D g2 = (Graphics2D) g;
 		Rectangle centerBounds = getCenterOneThirdBounds(); // 중앙 1/3 영역 계산
-		
+
 
 	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 	    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
 	    drawIcons(g2);
-		
+
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
@@ -151,10 +166,10 @@ public class MapPanel extends JPanel {
 			int currentMapWidth = mapLabel.getWidth();
 			int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 			double scaleRatio = (double) currentMapWidth / originalMapWidth;
-			
-			
+
+
 			//맵 중앙에 있는 아이콘들 우선순위 최고등급으로
-			for (Facility f : facilityList) {	
+			for (Facility f : facilityList) {
 	            // 1. 현재 화면상 아이콘 중심 좌표 계산
 	            int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
 	            int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
@@ -201,7 +216,7 @@ public class MapPanel extends JPanel {
 
 		// 우측 상단 이용 가이드 표시 (항상 맨 위에 표시)
 		drawUsageGuide(g2);
-		
+
 		drawInfoIcon(g2);
 	}
 
@@ -279,6 +294,9 @@ public class MapPanel extends JPanel {
 		}
 
 		drawnPopupBounds.add(bounds); // 김준, 그려지는 팝업 리스트화. 이후에 충돌 방지를 위하여
+
+		// [3. 추가] 화면에 그려지는 팝업의 위치와 시설 정보를 저장
+        currentPopupHitboxes.add(new PopupHitbox(bounds, f));
 
 		int popupX = bounds.x;
 		int popupY = bounds.y;
@@ -521,7 +539,7 @@ public class MapPanel extends JPanel {
 		g2.drawString(line2, textX, textY);
 
 	}
-	
+
 	/**
 	 * @brief 좌측 최상단에 고정된 정보 아이콘 (동그라미 내부에 'i')을 그립니다.
 	 * @param g2 렌더링할 Graphics2D 객체
@@ -537,7 +555,7 @@ public class MapPanel extends JPanel {
 	    // 폰트 설정
 	    Font originalFont = g2.getFont(); // 원래 폰트 저장
 	    Font iconFont = new Font("Arial", Font.BOLD, ICON_SIZE - 10); // 'i' 글자 크기 조정
-	    
+
 	    // 렌더링 힌트 (텍스트 부드럽게)
 	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 	    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -555,13 +573,13 @@ public class MapPanel extends JPanel {
 	    String infoText = "i";
 	    int textWidth = fm.stringWidth(infoText);
 	    int textHeight = fm.getHeight();
-	    
+
 	    // 텍스트 위치 계산 (동그라미 중앙)
 	    int textX = x + (ICON_SIZE - textWidth) / 2;
 	    int textY = y + (ICON_SIZE - textHeight) / 2 + fm.getAscent(); // baseline 조정
 
 	    g2.drawString(infoText, textX, textY);
-	    
+
 	    // 4. 원래 폰트 및 렌더링 힌트 복원
 	    g2.setFont(originalFont);
 	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
@@ -586,11 +604,28 @@ public class MapPanel extends JPanel {
 		int currentMapWidth = mapLabel.getWidth();
 		int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 		double scaleRatio = (double) currentMapWidth / originalMapWidth;
-		
+
 		final int x = INFO_ICON_PADDING;
 	    final int y = INFO_ICON_PADDING;
 	    final int size = INFO_ICON_SIZE;
 	    Rectangle infoIconBounds = new Rectangle(x, y, size, size);
+
+	 // [4. 수정] 저장된 팝업 Hitbox 리스트를 확인하여 클릭 처리
+        if (showFacilities) {
+            // 거꾸로 탐색 (화면 맨 위에 그려진 팝업부터 확인하기 위함)
+            for (int i = currentPopupHitboxes.size() - 1; i >= 0; i--) {
+                PopupHitbox hitbox = currentPopupHitboxes.get(i);
+
+                // 마우스 클릭 위치가 저장된 팝업 영역 안에 있는지 확인
+                if (hitbox.bounds.contains(mouseX, mouseY)) {
+                    System.out.println("[MapPanel] 시설 팝업 클릭됨: " + hitbox.facility.getName());
+
+                    // ★ 상세 페이지 이동 메서드 호출 ★
+                    mapController.onFacilityClicked(hitbox.facility);
+                    return; // 찾았으면 메서드 종료
+                }
+            }
+        }
 
 		// 1. 모든 시설 팝업 클릭 확인
 		if (showFacilities) {
@@ -639,8 +674,8 @@ public class MapPanel extends JPanel {
 				return;
 			}
 		}
-		
-		
+
+
 		// 4. AppInfo 아이콘 클릭 확인
 		if (infoIconBounds.contains(mouseX, mouseY)) {
 	        System.out.println("[MapPanel] 앱 정보 아이콘 클릭됨.");
@@ -658,15 +693,15 @@ public class MapPanel extends JPanel {
 
 				double prevZoom = zoomLevel;
 				if (e.getWheelRotation() < 0) {
-					zoomLevel *= 1.1;
+					zoomLevel *= 1.4;
 				} else {
-					zoomLevel /= 1.1;
+					zoomLevel /= 1.4;
 				}
 
 				if (zoomLevel < 1.0) {
 					zoomLevel = 1.0;
-				} else if (zoomLevel > 3.0) {
-					zoomLevel = 3.0;
+				} else if (zoomLevel > 2.5) {
+					zoomLevel = 2.5;
 				}
 				if (zoomLevel == prevZoom) {
 					return;
@@ -822,6 +857,8 @@ public class MapPanel extends JPanel {
 		mapX = (int) (mouseX - (relX * newMapW));
 		mapY = (int) (mouseY - (relY * newMapH));
 
+		buildingIconSize = (int)(DEFAULT_BUILDING_ICON_SIZE * zoomLevel);
+
 		checkVisibilityMode();
 		resizeAndRepaintMap();
 	}
@@ -880,7 +917,7 @@ public class MapPanel extends JPanel {
 	}
 
 	public void setMaxVisiblePopus() {
-		maxVisiblePopus = (int) (zoomLevel * 10 / 3) + 5;
+		maxVisiblePopus = (int) (zoomLevel * 1.5) + 4;
 		buildingIconSize = (int) (DEFAULT_BUILDING_ICON_SIZE * zoomLevel);
 	}
 
@@ -937,50 +974,58 @@ public class MapPanel extends JPanel {
 		// 1. 우 (East)
 		r.x = iconX + margin;
 		r.y = iconY - (r.height / 2);
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 2. 좌 (West)
 		r.x = iconX - margin - r.width;
 		r.y = iconY - (r.height / 2);
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 3. 하 (South)
 		r.x = iconX - (r.width / 2);
 		r.y = iconY + margin;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 4. 상 (North)
 		r.x = iconX - (r.width / 2);
 		r.y = iconY - margin - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 5. 우하 (Southeast)
 		r.x = iconX + diagOffset;
 		r.y = iconY + diagOffset;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 6. 좌하 (Southwest)
 		r.x = iconX - diagOffset - r.width;
 		r.y = iconY + diagOffset;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 7. 우상 (Northeast)
 		r.x = iconX + diagOffset;
 		r.y = iconY - diagOffset - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 8. 좌상 (Northwest)
 		r.x = iconX - diagOffset - r.width;
 		r.y = iconY - diagOffset - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// -----------------------------------------------------------------------
 		// 9~16. 추가된 8개 방향 탐색 (22.5도, 67.5도 계열)
@@ -989,60 +1034,68 @@ public class MapPanel extends JPanel {
 		// 9. 동남동 (ESE: 22.5도)
 		r.x = iconX + offsetA;
 		r.y = iconY + offsetB;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 10. 북동동 (ENE: 337.5도)
 		r.x = iconX + offsetA;
 		r.y = iconY - offsetB - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 11. 남남동 (SSE: 67.5도)
 		r.x = iconX + offsetB;
 		r.y = iconY + offsetA;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 12. 북북동 (NNE: 292.5도)
 		r.x = iconX + offsetB;
 		r.y = iconY - offsetA - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 13. 서남서 (WSW: 202.5도)
 		r.x = iconX - offsetA - r.width;
 		r.y = iconY + offsetB;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 14. 북서서 (WNW: 247.5도)
 		r.x = iconX - offsetA - r.width;
 		r.y = iconY - offsetB - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 15. 남남서 (SSW: 157.5도)
 		r.x = iconX - offsetB - r.width;
 		r.y = iconY + offsetA;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// 16. 북북서 (NNW: 112.5도)
 		r.x = iconX - offsetB - r.width;
 		r.y = iconY - offsetA - r.height;
-		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight))
+		if (checkUnUsableSpace(r.x, r.y, r.width, r.height, panelWidth, panelHeight)) {
 			return r;
+		}
 
 		// -----------------------------------------------------------------------
 		// 16개 방향 모두 충돌 발생 시
 		return null;
 	}
-	
+
 	//맵의 중앙 범위를 리턴함
 	public Rectangle getCenterOneThirdBounds() {
 		final double ratio = 2.0; // 이 변수만 변경하여 비율을 조절합니다.
-	    
+
 	    int panelWidth = getWidth();
 	    int panelHeight = getHeight();
 
@@ -1057,7 +1110,7 @@ public class MapPanel extends JPanel {
 	    // = (PanelWidth * (1 - 1/ratio)) / 2
 	    int xStart = (panelWidth - centerWidth) / 2;
 	    int yStart = (panelHeight - centerHeight) / 2;
-	    
+
 	    // 3. Rectangle 객체 생성 및 반환
 	    return new Rectangle(xStart, yStart, centerWidth, centerHeight);
 	}
