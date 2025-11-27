@@ -71,7 +71,7 @@ public class AppInfoPanel extends JPanel {
     */
    private void initializeContent() {
       // 제목 패널
-      JLabel titleLabel = new JLabel("🗺️ 숭미대학교 시설 가이드 앱 정보");
+      JLabel titleLabel = new JLabel("🗺️ 성공회대학교 시설 가이드 앱 정보");
       titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
       titleLabel.setForeground(HEADER_COLOR);
       titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 15, 5));
