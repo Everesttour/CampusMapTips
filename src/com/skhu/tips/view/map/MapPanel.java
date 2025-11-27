@@ -66,9 +66,9 @@ public class MapPanel extends JPanel {
 	private final int scrollSensitivity = 1; // 마우스 휠 스크롤 감도 조절
 	private int flagScrol = 0;
 
-	private static int buildingIconSize = 35;
 	private static final int FACILITY_ICON_SIZE = 14;
 	private static final int DEFAULT_BUILDING_ICON_SIZE = 35;
+	private static int buildingIconSize = DEFAULT_BUILDING_ICON_SIZE;
 
 	private static final Color COLOR_BUILDING = new Color(65, 105, 225);
 	private static final Color COLOR_FACILITY = new Color(255, 105, 180);
@@ -122,6 +122,14 @@ public class MapPanel extends JPanel {
 		super.paintChildren(g); // 지도(JLabel) 그리기
 
 		Graphics2D g2 = (Graphics2D) g;
+		Rectangle centerBounds = getCenterOneThirdBounds(); // 중앙 1/3 영역 계산
+		
+
+	    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+	    drawIcons(g2);
+		
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
@@ -140,6 +148,22 @@ public class MapPanel extends JPanel {
 			int currentMapWidth = mapLabel.getWidth();
 			int originalMapWidth = originalImage != null ? originalImage.getWidth(null) : 1;
 			double scaleRatio = (double) currentMapWidth / originalMapWidth;
+			
+			
+			//맵 중앙에 있는 아이콘들 우선순위 최고등급으로
+			for (Facility f : facilityList) {	
+	            // 1. 현재 화면상 아이콘 중심 좌표 계산
+	            int iconX = mapX + (int) (f.getxLocation() * scaleRatio);
+	            int iconY = mapY + (int) (f.getyLocation() * scaleRatio);
+
+	            // 2. 아이콘 중심 좌표가 중앙 영역 내에 있는지 확인
+	            if (centerBounds.contains(iconX, iconY)) {
+	                // 영역 내에 있으면 priority를 최우선(0)으로 설정
+	                f.setPriority(0);
+	            } else {
+	            	f.setPriority(f.getId());
+	            }
+			}
 
 			// 김준 수정사항, 우선순위에 맞춰 리스트 재정렬. facilities.json에서 값 수정
 			Collections.sort(facilityList, new Comparator<Facility>() {
@@ -194,7 +218,7 @@ public class MapPanel extends JPanel {
 			g2.drawRoundRect(x - offset, y - offset, buildingIconSize, buildingIconSize, 12, 12);
 
 			String idText = String.format("%02d", b.getId() % 100);
-			g2.setFont(new Font("SansSerif", Font.BOLD, buildingIconSize / 2));
+			g2.setFont(new Font("SansSerif", Font.BOLD, offset));
 			FontMetrics fm = g2.getFontMetrics();
 			int textX = x - (fm.stringWidth(idText) / 2);
 			int textY = y + (fm.getAscent() - fm.getDescent() + fm.getLeading()) / 2;
@@ -563,7 +587,7 @@ public class MapPanel extends JPanel {
 
 	private void setupMouseWheelListener() {
 		this.addMouseWheelListener(e -> {
-			if (flagScrol++ == scrollSensitivity) {
+			if (flagScrol++ >= scrollSensitivity) {
 				flagScrol = 0;
 				int mouseX = e.getX();
 				int mouseY = e.getY();
@@ -949,6 +973,29 @@ public class MapPanel extends JPanel {
 		// -----------------------------------------------------------------------
 		// 16개 방향 모두 충돌 발생 시
 		return null;
+	}
+	
+	//맵의 중앙 범위를 리턴함
+	public Rectangle getCenterOneThirdBounds() {
+		final double ratio = 2.0; // 이 변수만 변경하여 비율을 조절합니다.
+	    
+	    int panelWidth = getWidth();
+	    int panelHeight = getHeight();
+
+	    // 중앙 영역의 가로/세로 길이
+	    // 예: PanelWidth / 3.0
+	    int centerWidth = (int) (panelWidth / ratio);
+	    int centerHeight = (int) (panelHeight / ratio);
+
+	    // 중앙 영역의 시작점 좌표
+	    // (PanelWidth - CenterWidth) / 2
+	    // = (PanelWidth - (PanelWidth / ratio)) / 2
+	    // = (PanelWidth * (1 - 1/ratio)) / 2
+	    int xStart = (panelWidth - centerWidth) / 2;
+	    int yStart = (panelHeight - centerHeight) / 2;
+	    
+	    // 3. Rectangle 객체 생성 및 반환
+	    return new Rectangle(xStart, yStart, centerWidth, centerHeight);
 	}
 
 }
