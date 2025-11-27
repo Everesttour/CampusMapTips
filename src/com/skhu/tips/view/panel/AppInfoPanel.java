@@ -26,7 +26,7 @@ public class AppInfoPanel extends JPanel {
    private int cornerRadius = 25; // 모서리 둥글기 정도 (픽셀)
    
    // --- 색상 정의 (핑크 & 화이트 테마) ---
-   private static final Color BACKGROUND_COLOR = new Color(255, 230, 240); // Pale Pink (#FFE6F0) - 메인 패널 배경
+   private static final Color BACKGROUND_COLOR = new Color(155, 230, 240); //- 메인 패널 배경
     private static final Color BLOCK_BACKGROUND_COLOR = Color.WHITE; // 정보/꿀팁 블록 배경 (흰색)
    private static final Color HEADER_COLOR = new Color(80, 30, 50); // Dark Plum (#501E32) - 제목
    private static final Color TEXT_COLOR = new Color(100, 50, 70); // 일반 텍스트 색상
