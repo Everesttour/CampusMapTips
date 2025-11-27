@@ -8,7 +8,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -214,8 +213,8 @@ public class MainLeftPanel extends JPanel {
      * 이미지 아이콘을 로드합니다.
      */
     private void loadIcons() {
-        buildingIcon = loadImageIcon("images/LeftPanel/Building_Icon.png", 40);
-        facilityIcon = loadImageIcon("images/LeftPanel/Facility_Icon.png", 40);
+        buildingIcon = loadImageIcon("/resources/images/LeftPanel/Building_Icon.png", 40);
+        facilityIcon = loadImageIcon("/resources/images/LeftPanel/Facility_Icon.png", 40);
     }
 
     /**
@@ -241,34 +240,17 @@ public class MainLeftPanel extends JPanel {
         return new ImageIcon();
     }
 
-    /**
-     * 이미지 파일을 로드합니다. 클래스패스를 먼저 시도하고, 실패하면 파일 시스템 경로를 시도합니다.
-     *
-     * @param resourcePath 클래스패스 기준 리소스 경로
-     * @return 로드된 Image, 실패 시 null
-     */
     private Image loadImage(String resourcePath) throws IOException {
-        // 1. 클래스패스에서 리소스 로드 시도
-        java.net.URL url = getClass().getClassLoader().getResource(resourcePath);
+        // 1. getClass().getResource()는 JAR 내부와 IDE(Eclipse) 모두에서 동작합니다.
+        java.net.URL url = getClass().getResource(resourcePath);
+
         if (url != null) {
             return ImageIO.read(url);
+        } else {
+            // 경로가 틀렸거나 파일이 없을 때 디버깅용 메시지
+            System.err.println("[MainLeftPanel] 이미지를 찾을 수 없음: " + resourcePath);
+            return null;
         }
-
-        // 2. 파일 시스템에서 로드 시도
-        String[] paths = {
-            "src/resources/" + resourcePath,
-            "CampusMapTips/src/resources/" + resourcePath,
-            "../src/resources/" + resourcePath
-        };
-
-        for (String path : paths) {
-            File file = new File(path);
-            if (file.exists()) {
-                return ImageIO.read(file);
-            }
-        }
-
-        return null;
     }
 
     // --- 4. 컨트롤러가 접근할 수 있도록 Getter를 제공 ---

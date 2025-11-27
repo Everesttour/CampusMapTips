@@ -12,7 +12,6 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,7 +37,7 @@ public class MapPanel extends JPanel {
 	// --- 1. Fields & Constants ---
 	// =======================================================================
 
-	private static final String MAP_IMAGE_PATH = "src/resources/images/map/campus_map.jpg";
+	private static final String MAP_IMAGE_PATH = "/resources/images/map/campus_map.jpg";
 
 	// 시설 아이콘 표시 기준 (1.05배 이상 확대 시)
 	private static final double FACILITY_VISIBLE_THRESHOLD = 1.05;
@@ -819,14 +818,18 @@ public class MapPanel extends JPanel {
 	}
 
 	private void loadOriginalMapImage() {
-		try {
-			File file = new File(MAP_IMAGE_PATH);
-			if (file.exists()) {
-				originalImage = ImageIO.read(file);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	    try {
+	        // getClass().getResource()를 사용해야 JAR 안에 있는 파일을 읽을 수 있습니다.
+	        java.net.URL imageUrl = getClass().getResource(MAP_IMAGE_PATH);
+
+	        if (imageUrl != null) {
+	            originalImage = ImageIO.read(imageUrl);
+	        } else {
+	            System.err.println("이미지를 찾을 수 없습니다: " + MAP_IMAGE_PATH);
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
 	}
 
 	public void setSizeMap(int mouseX, int mouseY) {

@@ -9,7 +9,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -656,12 +655,13 @@ public class PanelControllerImpl implements PanelController {
         buildingImageLabel.setIcon(null);
         buildingImageLabel.setText("로딩 중...");
 
-        // 이미지 경로 시도 (ID 기반: {id}_Building.jpg)
+        // [수정] 리소스 경로를 /resources/... 로 시작하는 절대 경로로 통일
+        // 대소문자 주의 (폴더명 정확히)
         String[] imagePaths = {
-            "images/Buildings/" + building.getId() + "_Building.jpg",
-            "images/buildings/" + building.getId() + "_Building.jpg",
-            "images/Buildings/" + building.getId() + "_Building.png",
-            "images/buildings/" + building.getId() + "_Building.png"
+            "resources/images/Buildings/" + building.getId() + "_Building.jpg",
+            "resources/images/buildings/" + building.getId() + "_Building.jpg",
+            "resources/images/Buildings/" + building.getId() + "_Building.png",
+            "resources/images/buildings/" + building.getId() + "_Building.png"
         };
 
         // SwingWorker를 사용하여 백그라운드에서 이미지 로드
@@ -676,20 +676,17 @@ public class PanelControllerImpl implements PanelController {
                 for (String path : imagePaths) {
                     originalImage = loadOriginalImage(path);
                     if (originalImage != null) {
-                        // 원본 비율 저장
                         aspectRatio = (double) originalImage.getWidth() / originalImage.getHeight();
-                        // 높이에 맞춰 이미지 로드
                         icon = loadImageIcon(path, 350);
                         if (icon != null && icon.getIconWidth() > 0) {
                             break;
                         }
                     }
                 }
-
                 return new ImageLoadResult(icon, aspectRatio);
-    }
+            }
 
-    @Override
+            @Override
             protected void done() {
                 try {
                     ImageLoadResult result = get();
@@ -697,12 +694,11 @@ public class PanelControllerImpl implements PanelController {
                         buildingImageAspectRatio = result.aspectRatio;
                         buildingImageLabel.setIcon(result.icon);
                         buildingImageLabel.setText("");
-                        // 이미지 크기 업데이트
                         updateBuildingImageSize();
                     } else {
                         buildingImageLabel.setIcon(null);
                         buildingImageLabel.setText("이미지 없음");
-                        buildingImageAspectRatio = 1.0; // 기본값
+                        buildingImageAspectRatio = 1.0;
                     }
                 } catch (Exception e) {
                     buildingImageLabel.setIcon(null);
@@ -712,7 +708,6 @@ public class PanelControllerImpl implements PanelController {
                 }
             }
         };
-
         worker.execute();
     }
 
@@ -772,15 +767,14 @@ public class PanelControllerImpl implements PanelController {
         facilityImageLabel.setIcon(null);
         facilityImageLabel.setText("로딩 중...");
 
-        // 이미지 경로 시도 (ID 기반: {id}_Facility.jpg)
+        // [수정] 리소스 경로 통일 (/resources/...)
         String[] imagePaths = {
-            "images/Facilities/" + facility.getId() + "_Facility.jpg",
-            "images/facilities/" + facility.getId() + "_Facility.jpg",
-            "images/Facilities/" + facility.getId() + "_Facility.png",
-            "images/facilities/" + facility.getId() + "_Facility.png"
+            "resources/images/Facilities/" + facility.getId() + "_Facility.jpg",
+            "resources/images/facilities/" + facility.getId() + "_Facility.jpg",
+            "resources/images/Facilities/" + facility.getId() + "_Facility.png",
+            "resources/images/facilities/" + facility.getId() + "_Facility.png"
         };
 
-        // SwingWorker를 사용하여 백그라운드에서 이미지 로드
         SwingWorker<ImageLoadResult, Void> worker = new SwingWorker<ImageLoadResult, Void>() {
             @Override
             protected ImageLoadResult doInBackground() throws Exception {
@@ -788,24 +782,20 @@ public class PanelControllerImpl implements PanelController {
                 BufferedImage originalImage = null;
                 double aspectRatio = 1.0;
 
-                // 원본 이미지 로드하여 비율 계산
                 for (String path : imagePaths) {
                     originalImage = loadOriginalImage(path);
                     if (originalImage != null) {
-                        // 원본 비율 저장
                         aspectRatio = (double) originalImage.getWidth() / originalImage.getHeight();
-                        // 높이에 맞춰 이미지 로드
                         icon = loadImageIcon(path, 350);
                         if (icon != null && icon.getIconWidth() > 0) {
                             break;
                         }
                     }
                 }
-
                 return new ImageLoadResult(icon, aspectRatio);
-    }
+            }
 
-    @Override
+            @Override
             protected void done() {
                 try {
                     ImageLoadResult result = get();
@@ -813,12 +803,11 @@ public class PanelControllerImpl implements PanelController {
                         facilityImageAspectRatio = result.aspectRatio;
                         facilityImageLabel.setIcon(result.icon);
                         facilityImageLabel.setText("");
-                        // 이미지 크기 업데이트
                         updateFacilityImageSize();
                     } else {
                         facilityImageLabel.setIcon(null);
                         facilityImageLabel.setText("이미지 없음");
-                        facilityImageAspectRatio = 1.0; // 기본값
+                        facilityImageAspectRatio = 1.0;
                     }
                 } catch (Exception e) {
                     facilityImageLabel.setIcon(null);
@@ -828,7 +817,6 @@ public class PanelControllerImpl implements PanelController {
                 }
             }
         };
-
         worker.execute();
     }
 
@@ -861,31 +849,26 @@ public class PanelControllerImpl implements PanelController {
 
     /**
      * 원본 이미지를 로드합니다 (비율 계산용).
+     * 수정: File I/O 제거, 클래스패스 리소스 로딩만 사용
      */
     private BufferedImage loadOriginalImage(String resourcePath) {
         try {
             BufferedImage image = null;
 
-            // 1. 클래스패스에서 리소스 로드 시도
-            java.net.URL url = getClass().getClassLoader().getResource(resourcePath);
+            // [수정] 경로 앞에 '/'가 없으면 붙여줌 (절대 경로로 통일)
+            if (!resourcePath.startsWith("/")) {
+                resourcePath = "/" + resourcePath;
+            }
+
+            // 클래스패스에서 리소스 로드
+            java.net.URL url = getClass().getResource(resourcePath);
+
             if (url != null) {
                 image = ImageIO.read(url);
             } else {
-                // 2. 파일 시스템에서 로드 시도
-                String[] paths = {
-                    "src/resources/" + resourcePath,
-                    "CampusMapTips/src/resources/" + resourcePath,
-                    "resources/" + resourcePath,
-                    "../src/resources/" + resourcePath
-                };
-
-                for (String path : paths) {
-                    File file = new File(path);
-                    if (file.exists()) {
-                        image = ImageIO.read(file);
-                        break;
-                    }
-                }
+                // 디버깅을 위해 에러 로그 남기기
+                // System.err.println("이미지 리소스 없음: " + resourcePath);
+                return null;
             }
 
             // EXIF orientation 처리: 이미지가 가로로 긴 경우 90도 회전
@@ -933,38 +916,30 @@ public class PanelControllerImpl implements PanelController {
 
     /**
      * 이미지 파일을 로드합니다.
+     * 수정: File I/O 제거, 클래스패스 리소스 로딩만 사용
      */
     private Image loadImage(String resourcePath) throws IOException {
         BufferedImage image = null;
 
-        // 1. 클래스패스에서 리소스 로드 시도
-        java.net.URL url = getClass().getClassLoader().getResource(resourcePath);
+        // [수정] 경로 앞에 '/'가 없으면 붙여줌
+        if (!resourcePath.startsWith("/")) {
+            resourcePath = "/" + resourcePath;
+        }
+
+        // 클래스패스에서 리소스 로드
+        java.net.URL url = getClass().getResource(resourcePath);
+
         if (url != null) {
             image = ImageIO.read(url);
         } else {
-            // 2. 파일 시스템에서 로드 시도
-            String[] paths = {
-                "src/resources/" + resourcePath,
-                "CampusMapTips/src/resources/" + resourcePath,
-                "resources/" + resourcePath,
-                "../src/resources/" + resourcePath
-            };
-
-            for (String path : paths) {
-                File file = new File(path);
-                if (file.exists()) {
-                    image = ImageIO.read(file);
-                    break;
-                }
-            }
+            return null;
         }
 
-        // EXIF orientation 처리: 이미지가 가로로 긴 경우 90도 회전
+        // EXIF orientation 처리
         if (image != null) {
             int width = image.getWidth();
             int height = image.getHeight();
 
-            // 가로가 세로보다 크면 90도 시계방향 회전
             if (width > height) {
                 image = rotateImage(image, 90);
             }
