@@ -368,20 +368,7 @@ function App() {
       </aside>
 
       <section className="map-panel" aria-label="성공회대학교 캠퍼스 지도">
-        <header className="map-header">
-          <div><p className="eyebrow">CAMPUS MAP</p><h2>지도를 드래그하고 휠로 확대해 보세요.</h2></div>
-          <div className="map-actions">
-            <span className={`facility-status ${showFacilities ? 'is-on' : ''}`}><Sparkles size={15} />{showFacilities ? '시설 핀 표시 중' : '1.05배부터 시설 핀 표시'}</span>
-            <div className="zoom-control" aria-label="지도 확대 축소">
-              <button type="button" disabled={zoom <= MIN_ZOOM} onClick={() => zoomAt(zoom / 1.18)} aria-label="지도 축소"><Minus size={16} /></button>
-              <output>{Math.round(zoom * 100)}%</output>
-              <button type="button" disabled={zoom >= MAX_ZOOM} onClick={() => zoomAt(zoom * 1.18)} aria-label="지도 확대"><Plus size={16} /></button>
-            </div>
-          </div>
-        </header>
-
         <div className="map-stage">
-          <button className="map-info-button" type="button" onClick={() => setModal({ type: 'app-info' })} aria-label="성공회대학교 시설 가이드 앱 정보"><Info size={19} /></button>
           <div
             className={`map-viewport ${isDragging ? 'is-dragging' : ''}`}
             ref={viewportRef}
@@ -400,6 +387,15 @@ function App() {
                 const selected = activePlace?.placeKind === 'facility' && activePlace.place.id === facility.id
                 return <button key={facility.id} className={`facility-pin ${selected ? 'is-selected' : ''}`} type="button" style={{ left: `${(facility.xLocation / MAP_WIDTH) * 100}%`, top: `${(facility.yLocation / MAP_HEIGHT) * 100}%` }} onClick={() => openPlace('facility', facility, false)} aria-label={`${facility.name} 상세 보기`}><span>{facility.name}</span></button>
               })}
+            </div>
+            <button className="map-info-button" type="button" onClick={() => setModal({ type: 'app-info' })} aria-label="성공회대학교 시설 가이드 앱 정보"><Info size={19} /></button>
+            <div className="map-tools">
+              <span className={`facility-status ${showFacilities ? 'is-on' : ''}`}><Sparkles size={15} />{showFacilities ? '시설 핀 표시 중' : '1.05배부터 시설 핀 표시'}</span>
+              <div className="zoom-control" aria-label="지도 확대 축소">
+                <button type="button" disabled={zoom <= MIN_ZOOM} onClick={() => zoomAt(zoom / 1.18)} aria-label="지도 축소"><Minus size={16} /></button>
+                <output>{Math.round(zoom * 100)}%</output>
+                <button type="button" disabled={zoom >= MAX_ZOOM} onClick={() => zoomAt(zoom * 1.18)} aria-label="지도 확대"><Plus size={16} /></button>
+              </div>
             </div>
             {briefPopups.map((popup) => (
               <button
@@ -422,9 +418,9 @@ function App() {
                 <em>Detail &gt;</em>
               </button>
             ))}
+            <div className="map-legend"><span><i className="building-dot" /> 건물 번호</span><span><i className="facility-dot" /> 시설 핀</span></div>
+            <p className="map-guide"><Grip size={15} aria-hidden="true" /> 드래그로 이동 <span>·</span> <MousePointer2 size={15} aria-hidden="true" /> 휠로 확대</p>
           </div>
-          <div className="map-legend"><span><i className="building-dot" /> 건물 번호</span><span><i className="facility-dot" /> 시설 핀</span></div>
-          <p className="map-guide"><Grip size={15} aria-hidden="true" /> 드래그로 이동 <span>·</span> <MousePointer2 size={15} aria-hidden="true" /> 휠로 확대</p>
         </div>
         <footer className="map-footer"><Info size={15} aria-hidden="true" /> 정보는 변경될 수 있습니다. 방문 전 운영시간을 한 번 더 확인해 주세요.</footer>
       </section>
