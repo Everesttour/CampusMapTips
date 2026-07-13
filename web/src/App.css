@@ -45,7 +45,7 @@ button:disabled { cursor: not-allowed; }
 .map-viewport { position: relative; width: min(100%, 1250px, calc(141.6dvh - 68px)); min-height: 0; aspect-ratio: 1600 / 1130; margin: 0 auto; overflow: hidden; touch-action: none; overscroll-behavior: contain; user-select: none; -webkit-user-select: none; cursor: grab; background: #d9e4d7; border-radius: 20px; box-shadow: 0 16px 45px rgb(41 72 54 / 16%); }
 .map-viewport.is-dragging { cursor: grabbing; }
 .map-canvas { position: absolute; inset: 0; transform-origin: center; will-change: transform; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
-.campus-map { width: 100%; height: 100%; display: block; object-fit: cover; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.campus-map { width: 100%; height: 100%; display: block; object-fit: contain; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 .building-target, .facility-pin { position: absolute; z-index: 1; transform: translate(-50%, -50%); border: 0; }
 .building-target { width: clamp(28px, 3vw, 44px); height: clamp(28px, 3vw, 44px); border-radius: 50%; background: transparent; }
 .building-target::after { position: absolute; inset: 3px; content: ''; opacity: 0; border: 3px solid #0b7651; border-radius: 50%; box-shadow: 0 0 0 5px rgb(255 255 255 / 70%); transition: opacity .14s, transform .14s; }

@@ -98,7 +98,7 @@ function containsQuery(place: Place, query: string) {
 
 function mapFrame(viewport: ViewportSize): MapFrame {
   if (viewport.width === 0 || viewport.height === 0) return { width: 0, height: 0, offsetX: 0, offsetY: 0 }
-  const scale = Math.max(viewport.width / MAP_WIDTH, viewport.height / MAP_HEIGHT)
+  const scale = Math.min(viewport.width / MAP_WIDTH, viewport.height / MAP_HEIGHT)
   const width = MAP_WIDTH * scale
   const height = MAP_HEIGHT * scale
   return {
