@@ -46,6 +46,7 @@ type PlaceModal = { type: 'place'; placeKind: PlaceKind; place: Place }
 type Modal = PlaceModal | { type: 'app-info' } | null
 type Point = { x: number; y: number }
 type ViewportSize = { width: number; height: number }
+type MapFrame = { width: number; height: number; offsetX: number; offsetY: number }
 type Rect = { x: number; y: number; width: number; height: number }
 type ConnectorSide = 'right' | 'left' | 'bottom' | 'top'
 type BriefPopup = {
@@ -56,7 +57,7 @@ type BriefPopup = {
 }
 
 const MAP_WIDTH = 1600
-const MAP_HEIGHT = 1125
+const MAP_HEIGHT = 1130
 const MIN_ZOOM = 1
 const MAX_ZOOM = 2.5
 const FACILITY_ZOOM_THRESHOLD = 1.05
@@ -97,10 +98,32 @@ function containsQuery(place: Place, query: string) {
   return fields.join(' ').toLocaleLowerCase('ko-KR').includes(normalized)
 }
 
-function screenPoint(place: Place, viewport: ViewportSize, zoom: number, pan: Point): Point {
+function mapFrame(viewport: ViewportSize): MapFrame {
+  if (viewport.width === 0 || viewport.height === 0) return { width: 0, height: 0, offsetX: 0, offsetY: 0 }
+  const scale = Math.max(viewport.width / MAP_WIDTH, viewport.height / MAP_HEIGHT)
+  const width = MAP_WIDTH * scale
+  const height = MAP_HEIGHT * scale
   return {
-    x: ((place.xLocation / MAP_WIDTH) - 0.5) * viewport.width * zoom + pan.x + (viewport.width / 2),
-    y: ((place.yLocation / MAP_HEIGHT) - 0.5) * viewport.height * zoom + pan.y + (viewport.height / 2),
+    width,
+    height,
+    offsetX: (viewport.width - width) / 2,
+    offsetY: (viewport.height - height) / 2,
+  }
+}
+
+function canvasPoint(place: Place, viewport: ViewportSize): Point {
+  const frame = mapFrame(viewport)
+  return {
+    x: frame.offsetX + (place.xLocation / MAP_WIDTH) * frame.width,
+    y: frame.offsetY + (place.yLocation / MAP_HEIGHT) * frame.height,
+  }
+}
+
+function screenPoint(place: Place, viewport: ViewportSize, zoom: number, pan: Point): Point {
+  const point = canvasPoint(place, viewport)
+  return {
+    x: (point.x - (viewport.width / 2)) * zoom + pan.x + (viewport.width / 2),
+    y: (point.y - (viewport.height / 2)) * zoom + pan.y + (viewport.height / 2),
   }
 }
 
@@ -186,7 +209,8 @@ function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [loadError, setLoadError] = useState('')
   const viewportRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ pointerId: number; clientX: number; clientY: number; pan: Point } | null>(null)
+  const dragRef = useRef<{ pointerId: number; clientX: number; clientY: number; pan: Point; moved: boolean } | null>(null)
+  const suppressPlaceClickRef = useRef(false)
   const zoomRef = useRef(MIN_ZOOM)
 
   useEffect(() => {
@@ -219,8 +243,9 @@ function App() {
   const clampPan = useCallback((nextPan: Point, nextZoom: number) => {
     const bounds = viewportRef.current?.getBoundingClientRect()
     if (!bounds) return nextPan
-    const maxX = (bounds.width * (nextZoom - 1)) / 2
-    const maxY = (bounds.height * (nextZoom - 1)) / 2
+    const frame = mapFrame({ width: bounds.width, height: bounds.height })
+    const maxX = Math.max(0, (frame.width * nextZoom - bounds.width) / 2)
+    const maxY = Math.max(0, (frame.height * nextZoom - bounds.height) / 2)
     return {
       x: Math.min(maxX, Math.max(-maxX, nextPan.x)),
       y: Math.min(maxY, Math.max(-maxY, nextPan.y)),
@@ -255,13 +280,46 @@ function App() {
     return () => viewport.removeEventListener('wheel', handleWheel)
   }, [zoomAt, buildings.length, facilities.length])
 
+  useEffect(() => {
+    const moveMap = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+
+      const deltaX = event.clientX - drag.clientX
+      const deltaY = event.clientY - drag.clientY
+      if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) drag.moved = true
+      event.preventDefault()
+      setPan(clampPan({ x: drag.pan.x + deltaX, y: drag.pan.y + deltaY }, zoom))
+    }
+    const finishMapDrag = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+      dragRef.current = null
+      setIsDragging(false)
+      if (drag.moved) {
+        suppressPlaceClickRef.current = true
+        window.setTimeout(() => { suppressPlaceClickRef.current = false }, 350)
+      }
+    }
+
+    window.addEventListener('pointermove', moveMap, { passive: false })
+    window.addEventListener('pointerup', finishMapDrag)
+    window.addEventListener('pointercancel', finishMapDrag)
+    return () => {
+      window.removeEventListener('pointermove', moveMap)
+      window.removeEventListener('pointerup', finishMapDrag)
+      window.removeEventListener('pointercancel', finishMapDrag)
+    }
+  }, [clampPan, zoom])
+
   const focusOn = useCallback((place: Place) => {
     const bounds = viewportRef.current?.getBoundingClientRect()
     const targetZoom = MAX_ZOOM
     if (bounds) {
+      const point = canvasPoint(place, { width: bounds.width, height: bounds.height })
       const coordinate = {
-        x: ((place.xLocation / MAP_WIDTH) - 0.5) * bounds.width,
-        y: ((place.yLocation / MAP_HEIGHT) - 0.5) * bounds.height,
+        x: point.x - (bounds.width / 2),
+        y: point.y - (bounds.height / 2),
       }
       setPan(clampPan({ x: -coordinate.x * targetZoom, y: -coordinate.y * targetZoom }, targetZoom))
     }
@@ -287,24 +345,19 @@ function App() {
   }
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return
-    dragRef.current = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, pan }
+    const target = event.target as HTMLElement
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    if (target.closest('.map-tools, .map-info-button, .brief-popup, .map-legend, .map-guide')) return
+    event.preventDefault()
+    dragRef.current = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, pan, moved: false }
     event.currentTarget.setPointerCapture(event.pointerId)
     setIsDragging(true)
   }
 
-  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) return
-    setPan(clampPan({ x: drag.pan.x + event.clientX - drag.clientX, y: drag.pan.y + event.clientY - drag.clientY }, zoom))
-  }
-
-  const endPointerDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId === event.pointerId) {
-      dragRef.current = null
-      setIsDragging(false)
-    }
-  }
+  const openMapPlace = useCallback((placeKind: PlaceKind, place: Place) => {
+    if (suppressPlaceClickRef.current) return
+    openPlace(placeKind, place, false)
+  }, [openPlace])
 
   const displayedPlaces = useMemo(() => {
     const list = activeKind === 'building' ? buildings : facilities
@@ -373,19 +426,19 @@ function App() {
             className={`map-viewport ${isDragging ? 'is-dragging' : ''}`}
             ref={viewportRef}
             onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endPointerDrag}
-            onPointerCancel={endPointerDrag}
+            onDragStart={(event) => event.preventDefault()}
           >
-            <div className="map-canvas" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
+            <div className="map-canvas" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }} onDragStart={(event) => event.preventDefault()}>
               <img className="campus-map" src={assetPath('images/campus-map.jpg')} alt="성공회대학교 캠퍼스 조감 지도" draggable="false" />
               {buildings.map((building) => {
                 const selected = activePlace?.placeKind === 'building' && activePlace.place.id === building.id
-                return <button key={building.id} className={`building-target ${selected ? 'is-selected' : ''}`} type="button" style={{ left: `${(building.xLocation / MAP_WIDTH) * 100}%`, top: `${(building.yLocation / MAP_HEIGHT) * 100}%` }} onClick={() => openPlace('building', building, false)} aria-label={`${building.name} 상세 보기`} />
+                const point = canvasPoint(building, viewportSize)
+                return <button key={building.id} className={`building-target ${selected ? 'is-selected' : ''}`} type="button" style={{ left: point.x, top: point.y }} onClick={() => openMapPlace('building', building)} aria-label={`${building.name} 상세 보기`} />
               })}
               {showFacilities && facilities.map((facility) => {
                 const selected = activePlace?.placeKind === 'facility' && activePlace.place.id === facility.id
-                return <button key={facility.id} className={`facility-pin ${selected ? 'is-selected' : ''}`} type="button" style={{ left: `${(facility.xLocation / MAP_WIDTH) * 100}%`, top: `${(facility.yLocation / MAP_HEIGHT) * 100}%` }} onClick={() => openPlace('facility', facility, false)} aria-label={`${facility.name} 상세 보기`}><span>{facility.name}</span></button>
+                const point = canvasPoint(facility, viewportSize)
+                return <button key={facility.id} className={`facility-pin ${selected ? 'is-selected' : ''}`} type="button" style={{ left: point.x, top: point.y }} onClick={() => openMapPlace('facility', facility)} aria-label={`${facility.name} 상세 보기`}><span>{facility.name}</span></button>
               })}
             </div>
             <button className="map-info-button" type="button" onClick={() => setModal({ type: 'app-info' })} aria-label="성공회대학교 시설 가이드 앱 정보"><Info size={19} /></button>
