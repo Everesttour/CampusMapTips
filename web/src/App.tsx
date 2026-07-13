@@ -509,7 +509,7 @@ function PlaceDetailModal({ modal, onClose }: { modal: PlaceModal; onClose: () =
   const imagePath = assetPath(`images/${placeKind === 'building' ? 'buildings' : 'facilities'}/${place.id}.webp`)
 
   return (
-    <div className="modal-backdrop" role="presentation">
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <div className="detail-modal" role="dialog" aria-modal="true" aria-label={`${place.name} 상세 정보`}>
         <figure className="detail-image"><img src={imagePath} alt="" onError={(event) => event.currentTarget.parentElement?.classList.add('image-unavailable')} /><figcaption>이미지 없음</figcaption></figure>
         {building ? <BuildingDetail building={building} onClose={onClose} /> : <FacilityDetail facility={facility!} onClose={onClose} />}
