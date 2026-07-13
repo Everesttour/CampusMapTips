@@ -607,7 +607,7 @@ function PlaceDetailModal({ modal, onClose }: { modal: PlaceModal; onClose: () =
     <div className="modal-backdrop detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <div className={`detail-modal ${isPhotoExpanded ? 'is-photo-expanded' : ''}`} role="dialog" aria-modal="true" aria-label={`${place.name} 상세 정보`} onScrollCapture={(event) => {
         const source = event.target as HTMLElement
-        if (!isPhotoExpanded && source.scrollTop > 12) expandPhoto()
+        if (!isPhotoExpanded && source.scrollTop > 72) expandPhoto()
       }}>
         <button className="mobile-detail-close" type="button" onClick={onClose} aria-label="상세 정보 닫기"><X size={20} /></button>
         <figure className="detail-image" role="button" tabIndex={0} aria-expanded={isPhotoExpanded} aria-label={isPhotoExpanded ? '사진 전체가 표시되었습니다' : '사진 전체 보기'} onClick={expandPhoto} onKeyDown={(event) => {
