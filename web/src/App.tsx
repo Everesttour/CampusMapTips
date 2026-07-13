@@ -357,7 +357,6 @@ function App() {
     if (target.closest('.map-tools, .map-info-button, .brief-popup, .map-legend, .map-guide')) return
     event.preventDefault()
     dragRef.current = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, pan, moved: false }
-    event.currentTarget.setPointerCapture(event.pointerId)
     setIsDragging(true)
   }
 
