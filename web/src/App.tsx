@@ -600,12 +600,26 @@ function PlaceDetailModal({ modal, onClose }: { modal: PlaceModal; onClose: () =
   const facility = placeKind === 'facility' ? place as Facility : null
   const building = placeKind === 'building' ? place as Building : null
   const imagePath = assetPath(`images/${placeKind === 'building' ? 'buildings' : 'facilities'}/${place.id}.webp`)
+  const [isPhotoExpanded, setIsPhotoExpanded] = useState(false)
+  const expandPhoto = () => setIsPhotoExpanded(true)
 
   return (
     <div className="modal-backdrop detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <div className="detail-modal" role="dialog" aria-modal="true" aria-label={`${place.name} 상세 정보`}>
+      <div className={`detail-modal ${isPhotoExpanded ? 'is-photo-expanded' : ''}`} role="dialog" aria-modal="true" aria-label={`${place.name} 상세 정보`} onScrollCapture={(event) => {
+        const source = event.target as HTMLElement
+        if (!isPhotoExpanded && source.scrollTop > 12) expandPhoto()
+      }}>
         <button className="mobile-detail-close" type="button" onClick={onClose} aria-label="상세 정보 닫기"><X size={20} /></button>
-        <figure className="detail-image"><img src={imagePath} alt="" onError={(event) => event.currentTarget.parentElement?.classList.add('image-unavailable')} /><figcaption>이미지 없음</figcaption></figure>
+        <figure className="detail-image" role="button" tabIndex={0} aria-expanded={isPhotoExpanded} aria-label={isPhotoExpanded ? '사진 전체가 표시되었습니다' : '사진 전체 보기'} onClick={expandPhoto} onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            expandPhoto()
+          }
+        }}>
+          <img src={imagePath} alt="" onError={(event) => event.currentTarget.parentElement?.classList.add('image-unavailable')} />
+          <span className="detail-photo-hint" aria-hidden="true">사진 전체 보기</span>
+          <figcaption>이미지 없음</figcaption>
+        </figure>
         {building ? <BuildingDetail building={building} onClose={onClose} /> : <FacilityDetail facility={facility!} onClose={onClose} />}
       </div>
     </div>
