@@ -8,11 +8,12 @@ const webDirectory = resolve(scriptDirectory, '..')
 const resourcesDirectory = resolve(webDirectory, '..', 'src', 'resources')
 const publicDirectory = join(webDirectory, 'public')
 
-async function webp(input, output, width) {
+async function webp(input, output, width, rotateLandscape = false) {
   await mkdir(dirname(output), { recursive: true })
   const metadata = await sharp(input).metadata()
-  const shouldRotatePortrait = metadata.width && metadata.height && metadata.width > metadata.height
-  const image = shouldRotatePortrait ? sharp(input).rotate(90) : sharp(input).rotate()
+  const shouldRotatePortrait =
+    rotateLandscape && metadata.width && metadata.height && metadata.width > metadata.height
+  const image = shouldRotatePortrait ? sharp(input).rotate(90) : sharp(input)
   await image
     .resize({ width, withoutEnlargement: true })
     .webp({ quality: 78, effort: 4 })
@@ -26,7 +27,7 @@ async function compressPhotoSet(sourceDirectory, destinationDirectory) {
   for (const image of images) {
     const match = image.match(/^(\d+)_/)
     if (!match) continue
-    await webp(join(sourceDirectory, image), join(destinationDirectory, `${match[1]}.webp`), 1000)
+    await webp(join(sourceDirectory, image), join(destinationDirectory, `${match[1]}.webp`), 1000, true)
   }
 }
 
