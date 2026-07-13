@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Building2,
   ChevronRight,
@@ -48,12 +48,10 @@ type Point = { x: number; y: number }
 type ViewportSize = { width: number; height: number }
 type MapFrame = { width: number; height: number; offsetX: number; offsetY: number }
 type Rect = { x: number; y: number; width: number; height: number }
-type ConnectorSide = 'right' | 'left' | 'bottom' | 'top'
 type BriefPopup = {
   facility: Facility
   bounds: Rect
-  connectorSide: ConnectorSide
-  connectorLength: number
+  connector: { start: Point; end: Point }
 }
 
 const MAP_WIDTH = 1600
@@ -135,6 +133,25 @@ function containsPoint(rect: Rect, point: Point, padding = 0) {
   return point.x >= rect.x - padding && point.x <= rect.x + rect.width + padding && point.y >= rect.y - padding && point.y <= rect.y + rect.height + padding
 }
 
+function connectorToPopup(point: Point, bounds: Rect) {
+  const center = { x: bounds.x + (bounds.width / 2), y: bounds.y + (bounds.height / 2) }
+  const vector = { x: point.x - center.x, y: point.y - center.y }
+  const distance = Math.hypot(vector.x, vector.y)
+  if (distance === 0) return { start: point, end: point }
+
+  const edgeRatio = Math.max(Math.abs(vector.x) / (bounds.width / 2), Math.abs(vector.y) / (bounds.height / 2))
+  const end = { x: center.x + (vector.x / edgeRatio), y: center.y + (vector.y / edgeRatio) }
+  const lineLength = Math.hypot(end.x - point.x, end.y - point.y)
+  const startOffset = Math.min(8, lineLength / 2)
+  return {
+    start: {
+      x: point.x + ((end.x - point.x) / lineLength) * startOffset,
+      y: point.y + ((end.y - point.y) / lineLength) * startOffset,
+    },
+    end,
+  }
+}
+
 function layoutBriefPopups(facilities: Facility[], allPlaces: Place[], viewport: ViewportSize, zoom: number, pan: Point): BriefPopup[] {
   if (viewport.width === 0 || viewport.height === 0) return []
 
@@ -176,17 +193,7 @@ function layoutBriefPopups(facilities: Facility[], allPlaces: Place[], viewport:
         const overlapsPopup = placed.some((popup) => overlaps(bounds, popup.bounds))
         if (!insideViewport || overlapsPin || overlapsPopup) continue
 
-        const center = { x: bounds.x + (bounds.width / 2), y: bounds.y + (bounds.height / 2) }
-        let connectorSide: ConnectorSide
-        let connectorLength: number
-        if (Math.abs(center.x - point.x) > Math.abs(center.y - point.y)) {
-          connectorSide = center.x > point.x ? 'right' : 'left'
-          connectorLength = connectorSide === 'right' ? bounds.x - point.x - 8 : point.x - (bounds.x + bounds.width) - 8
-        } else {
-          connectorSide = center.y > point.y ? 'bottom' : 'top'
-          connectorLength = connectorSide === 'bottom' ? bounds.y - point.y - 8 : point.y - (bounds.y + bounds.height) - 8
-        }
-        selected = { facility, bounds, connectorSide, connectorLength: Math.max(8, connectorLength) }
+        selected = { facility, bounds, connector: connectorToPopup(point, bounds) }
         break
       }
     }
@@ -450,17 +457,29 @@ function App() {
                 <button type="button" disabled={zoom >= MAX_ZOOM} onClick={() => zoomAt(zoom * 1.18)} aria-label="지도 확대"><Plus size={16} /></button>
               </div>
             </div>
+            {briefPopups.length > 0 && (
+              <svg className="map-connector-layer" viewBox={`0 0 ${viewportSize.width} ${viewportSize.height}`} aria-hidden="true">
+                {briefPopups.map((popup) => (
+                  <line
+                    key={popup.facility.id}
+                    x1={popup.connector.start.x}
+                    y1={popup.connector.start.y}
+                    x2={popup.connector.end.x}
+                    y2={popup.connector.end.y}
+                  />
+                ))}
+              </svg>
+            )}
             {briefPopups.map((popup) => (
               <button
-                className={`brief-popup link-${popup.connectorSide}`}
+                className="brief-popup"
                 type="button"
                 key={popup.facility.id}
                 style={{
                   left: popup.bounds.x,
                   top: popup.bounds.y,
                   width: popup.bounds.width,
-                  '--connector-length': `${popup.connectorLength}px`,
-                } as CSSProperties}
+                }}
                 onClick={() => openPlace('facility', popup.facility, false)}
                 aria-label={`${popup.facility.name} 간략 정보 및 상세 보기`}
               >

@@ -57,11 +57,8 @@ button:disabled { cursor: not-allowed; }
 .facility-pin span { position: absolute; left: 50%; bottom: calc(100% + 7px); width: max-content; max-width: 130px; padding: 5px 7px; color: #fff; font-size: 10px; font-weight: 700; line-height: 1.25; white-space: normal; text-align: center; background: rgb(67 45 54 / 88%); border-radius: 6px; opacity: 0; transform: translate(-50%, 4px); pointer-events: none; transition: opacity .14s, transform .14s; }
 .facility-pin:hover span, .facility-pin:focus-visible span, .facility-pin.is-selected span { opacity: 1; transform: translate(-50%, 0); }
 .brief-popup { position: absolute; z-index: 4; height: 100px; padding: 9px 10px; color: #333; text-align: left; border: 1px solid #c8c8c8; border-radius: 13px; background: #fff; box-shadow: 3px 4px 0 rgb(0 0 0 / 12%); }
-.brief-popup::after { position: absolute; z-index: -1; display: block; content: ''; background: #eb78a4; }
-.brief-popup.link-right::after { top: 50%; right: 100%; width: var(--connector-length); height: 2px; }
-.brief-popup.link-left::after { top: 50%; left: 100%; width: var(--connector-length); height: 2px; }
-.brief-popup.link-bottom::after { bottom: 100%; left: 50%; width: 2px; height: var(--connector-length); }
-.brief-popup.link-top::after { top: 100%; left: 50%; width: 2px; height: var(--connector-length); }
+.map-connector-layer { position: absolute; z-index: 3; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.map-connector-layer line { stroke: #eb78a4; stroke-width: 2; stroke-linecap: round; }
 .brief-title { display: flex; align-items: center; gap: 7px; min-width: 0; }.brief-title b { width: 20px; height: 20px; flex: 0 0 auto; display: grid; place-items: center; color: #fff; font-size: 10px; background: #eb78a4; border-radius: 50%; }.brief-title strong { min-width: 0; overflow: hidden; color: #222; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .brief-location, .brief-overview, .brief-notice { display: block; overflow: hidden; margin-top: 4px; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.brief-location { color: #505050; }.brief-overview { color: #3f3f3f; }.brief-notice { color: #dc143c; }.brief-popup em { position: absolute; right: 9px; bottom: 7px; color: #b5b5b5; font-size: 9px; font-style: italic; }
 .map-info-button { position: absolute; z-index: 6; top: 18px; left: 18px; width: 35px; height: 35px; display: grid; place-items: center; color: #fff; border: 3px solid #fff; border-radius: 50%; background: #3c8cdc; box-shadow: 0 4px 10px rgb(25 67 105 / 25%); }
