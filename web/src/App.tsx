@@ -487,7 +487,7 @@ function App() {
             const Icon = meta[kind].icon
             const count = kind === 'building' ? buildings.length : facilities.length
             return (
-              <button key={kind} className={`kind-tab ${activeKind === kind ? 'is-active' : ''}`} type="button" role="tab" aria-selected={activeKind === kind} onClick={() => selectKind(kind)}>
+              <button key={kind} className={`kind-tab ${kind} ${activeKind === kind ? 'is-active' : ''}`} type="button" role="tab" aria-selected={activeKind === kind} onClick={() => selectKind(kind)}>
                 <Icon size={18} aria-hidden="true" /><span>{meta[kind].label}</span><em>{count}</em>
               </button>
             )
@@ -500,14 +500,14 @@ function App() {
           {query && <button type="button" className="clear-search" onClick={() => setQuery('')} aria-label="검색어 지우기"><X size={16} /></button>}
         </label>
 
-        <div className="list-heading"><p>{activeKind === 'building' ? '건물 목록' : '시설 목록'}</p><span>{displayedPlaces.length}</span></div>
+        <div className={`list-heading ${activeKind}`}><p>{activeKind === 'building' ? '건물 목록' : '시설 목록'}</p><span>{displayedPlaces.length}</span></div>
         <div className="place-list" role="list">
           {displayedPlaces.map((place) => {
             const selected = activePlace?.placeKind === activeKind && activePlace.place.id === place.id
             const Icon = meta[activeKind].icon
             const subtitle = isFacility(place) ? `${place.buildingName || '교외 시설'} · ${floorLabel(place.floor)}` : place.description
             return (
-              <button className={`place-row ${selected ? 'is-selected' : ''}`} type="button" role="listitem" key={place.id} onClick={() => openPlace(activeKind, place)}>
+              <button className={`place-row ${activeKind} ${selected ? 'is-selected' : ''}`} type="button" role="listitem" key={place.id} onClick={() => openPlace(activeKind, place)}>
                 <span className={`place-icon ${activeKind}`}><Icon size={17} /></span>
                 <span className="place-copy"><strong>{place.name}</strong><small>{subtitle}</small></span>
                 <ChevronRight size={17} aria-hidden="true" />
