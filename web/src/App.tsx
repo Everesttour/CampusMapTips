@@ -329,7 +329,6 @@ function App() {
       <aside className="navigation-panel" aria-label="장소 목록">
         <div className="brand-block">
           <img className="skhu-logo" src={skhuLogo} alt="인권과 평화의 대학 - 성공회대학교" />
-          <div className="brand-copy"><span className="brand-mark" aria-hidden="true"><MapPin size={21} fill="currentColor" /></span><div><p className="eyebrow">SUCCESS CAMPUS</p><h1>캠퍼스 꿀팁 지도</h1></div></div>
         </div>
 
         <div className="kind-tabs" role="tablist" aria-label="장소 종류">
@@ -392,7 +391,7 @@ function App() {
             onPointerCancel={endPointerDrag}
           >
             <div className="map-canvas" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
-              <img className="campus-map" src={assetPath('images/map.webp')} alt="성공회대학교 캠퍼스 조감 지도" draggable="false" />
+              <img className="campus-map" src={assetPath('images/campus-map.jpg')} alt="성공회대학교 캠퍼스 조감 지도" draggable="false" />
               {buildings.map((building) => {
                 const selected = activePlace?.placeKind === 'building' && activePlace.place.id === building.id
                 return <button key={building.id} className={`building-target ${selected ? 'is-selected' : ''}`} type="button" style={{ left: `${(building.xLocation / MAP_WIDTH) * 100}%`, top: `${(building.yLocation / MAP_HEIGHT) * 100}%` }} onClick={() => openPlace('building', building, false)} aria-label={`${building.name} 상세 보기`} />

@@ -36,7 +36,8 @@ await rm(join(publicDirectory, 'data'), { recursive: true, force: true })
 await rm(join(publicDirectory, 'images'), { recursive: true, force: true })
 
 await cp(join(resourcesDirectory, 'data'), join(publicDirectory, 'data'), { recursive: true })
-await webp(join(resourcesDirectory, 'images', 'map', 'campus_map.jpg'), join(publicDirectory, 'images', 'map.webp'), 1800)
+await mkdir(join(publicDirectory, 'images'), { recursive: true })
+await cp(join(resourcesDirectory, 'images', 'map', 'campus_map.jpg'), join(publicDirectory, 'images', 'campus-map.jpg'))
 await compressPhotoSet(join(resourcesDirectory, 'images', 'Buildings'), join(publicDirectory, 'images', 'buildings'))
 await compressPhotoSet(join(resourcesDirectory, 'images', 'Facilities'), join(publicDirectory, 'images', 'facilities'))
 
