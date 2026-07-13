@@ -53,6 +53,8 @@ type BriefPopup = {
   bounds: Rect
   connector: { start: Point; end: Point }
 }
+type DragState = { pointerId: number; clientX: number; clientY: number; pan: Point; moved: boolean }
+type PinchState = { distance: number; zoom: number; pan: Point; focus: Point }
 
 const MAP_WIDTH = 1600
 const MAP_HEIGHT = 1130
@@ -131,6 +133,14 @@ function overlaps(first: Rect, second: Rect) {
 
 function containsPoint(rect: Rect, point: Point, padding = 0) {
   return point.x >= rect.x - padding && point.x <= rect.x + rect.width + padding && point.y >= rect.y - padding && point.y <= rect.y + rect.height + padding
+}
+
+function distanceBetween(first: Point, second: Point) {
+  return Math.hypot(second.x - first.x, second.y - first.y)
+}
+
+function midpointBetween(first: Point, second: Point): Point {
+  return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 }
 }
 
 function connectorToPopup(point: Point, bounds: Rect) {
@@ -216,9 +226,16 @@ function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [loadError, setLoadError] = useState('')
   const viewportRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ pointerId: number; clientX: number; clientY: number; pan: Point; moved: boolean } | null>(null)
+  const dragRef = useRef<DragState | null>(null)
+  const panRef = useRef<Point>({ x: 0, y: 0 })
+  const touchPointsRef = useRef<Map<number, Point>>(new Map())
+  const pinchRef = useRef<PinchState | null>(null)
   const suppressPlaceClickRef = useRef(false)
   const zoomRef = useRef(MIN_ZOOM)
+
+  useEffect(() => {
+    panRef.current = pan
+  }, [pan])
 
   useEffect(() => {
     Promise.all([loadJson<Building[]>('data/buildings.json'), loadJson<Facility[]>('data/facilities.json')])
@@ -267,7 +284,9 @@ function App() {
         x: focus.x - ((focus.x - currentPan.x) / currentZoom) * boundedZoom,
         y: focus.y - ((focus.y - currentPan.y) / currentZoom) * boundedZoom,
       }
-      return clampPan(nextPan, boundedZoom)
+      const clampedPan = clampPan(nextPan, boundedZoom)
+      panRef.current = clampedPan
+      return clampedPan
     })
     zoomRef.current = boundedZoom
     setZoom(boundedZoom)
@@ -289,6 +308,40 @@ function App() {
 
   useEffect(() => {
     const moveMap = (event: PointerEvent) => {
+      const touchPoint = touchPointsRef.current.get(event.pointerId)
+      if (touchPoint) {
+        touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+        const pinch = pinchRef.current
+        const points = [...touchPointsRef.current.values()]
+        if (pinch && points.length >= 2) {
+          const [first, second] = points
+          const distance = distanceBetween(first, second)
+          const bounds = viewportRef.current?.getBoundingClientRect()
+          if (distance > 0 && bounds) {
+            const midpoint = midpointBetween(first, second)
+            const focus = {
+              x: midpoint.x - bounds.left - (bounds.width / 2),
+              y: midpoint.y - bounds.top - (bounds.height / 2),
+            }
+            const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinch.zoom * (distance / pinch.distance)))
+            const mapPoint = {
+              x: (pinch.focus.x - pinch.pan.x) / pinch.zoom,
+              y: (pinch.focus.y - pinch.pan.y) / pinch.zoom,
+            }
+            const nextPan = clampPan({
+              x: focus.x - mapPoint.x * nextZoom,
+              y: focus.y - mapPoint.y * nextZoom,
+            }, nextZoom)
+            panRef.current = nextPan
+            zoomRef.current = nextZoom
+            setPan(nextPan)
+            setZoom(nextZoom)
+          }
+          event.preventDefault()
+          return
+        }
+      }
+
       const drag = dragRef.current
       if (!drag || drag.pointerId !== event.pointerId) return
 
@@ -296,9 +349,21 @@ function App() {
       const deltaY = event.clientY - drag.clientY
       if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) drag.moved = true
       event.preventDefault()
-      setPan(clampPan({ x: drag.pan.x + deltaX, y: drag.pan.y + deltaY }, zoom))
+      const nextPan = clampPan({ x: drag.pan.x + deltaX, y: drag.pan.y + deltaY }, zoomRef.current)
+      panRef.current = nextPan
+      setPan(nextPan)
     }
     const finishMapDrag = (event: PointerEvent) => {
+      const hadTouchPoint = touchPointsRef.current.delete(event.pointerId)
+      if (hadTouchPoint && pinchRef.current) {
+        pinchRef.current = null
+        dragRef.current = null
+        setIsDragging(false)
+        suppressPlaceClickRef.current = true
+        window.setTimeout(() => { suppressPlaceClickRef.current = false }, 350)
+        return
+      }
+
       const drag = dragRef.current
       if (!drag || drag.pointerId !== event.pointerId) return
       dragRef.current = null
@@ -317,7 +382,7 @@ function App() {
       window.removeEventListener('pointerup', finishMapDrag)
       window.removeEventListener('pointercancel', finishMapDrag)
     }
-  }, [clampPan, zoom])
+  }, [clampPan])
 
   const focusOn = useCallback((place: Place) => {
     const bounds = viewportRef.current?.getBoundingClientRect()
@@ -328,7 +393,9 @@ function App() {
         x: point.x - (bounds.width / 2),
         y: point.y - (bounds.height / 2),
       }
-      setPan(clampPan({ x: -coordinate.x * targetZoom, y: -coordinate.y * targetZoom }, targetZoom))
+      const nextPan = clampPan({ x: -coordinate.x * targetZoom, y: -coordinate.y * targetZoom }, targetZoom)
+      panRef.current = nextPan
+      setPan(nextPan)
     }
     zoomRef.current = targetZoom
     setZoom(targetZoom)
@@ -343,7 +410,9 @@ function App() {
     setActiveKind(kind)
     setModal(null)
     if (kind === 'building') {
-      setPan({ x: 0, y: 0 })
+      const resetPan = { x: 0, y: 0 }
+      panRef.current = resetPan
+      setPan(resetPan)
       zoomRef.current = MIN_ZOOM
       setZoom(MIN_ZOOM)
     } else {
@@ -356,7 +425,30 @@ function App() {
     if (event.pointerType === 'mouse' && event.button !== 0) return
     if (target.closest('.map-tools, .map-info-button, .brief-popup, .map-legend, .map-guide')) return
     event.preventDefault()
-    dragRef.current = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, pan, moved: false }
+    if (event.pointerType === 'touch') {
+      touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      const points = [...touchPointsRef.current.values()]
+      if (points.length === 2) {
+        const [first, second] = points
+        const bounds = viewportRef.current?.getBoundingClientRect()
+        if (bounds) {
+          const midpoint = midpointBetween(first, second)
+          pinchRef.current = {
+            distance: Math.max(1, distanceBetween(first, second)),
+            zoom: zoomRef.current,
+            pan: panRef.current,
+            focus: {
+              x: midpoint.x - bounds.left - (bounds.width / 2),
+              y: midpoint.y - bounds.top - (bounds.height / 2),
+            },
+          }
+          dragRef.current = null
+          setIsDragging(true)
+          return
+        }
+      }
+    }
+    dragRef.current = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, pan: panRef.current, moved: false }
     setIsDragging(true)
   }
 
@@ -444,7 +536,8 @@ function App() {
               {showFacilities && facilities.map((facility) => {
                 const selected = activePlace?.placeKind === 'facility' && activePlace.place.id === facility.id
                 const point = canvasPoint(facility, viewportSize)
-                return <button key={facility.id} className={`facility-pin ${selected ? 'is-selected' : ''}`} type="button" style={{ left: point.x, top: point.y }} onClick={() => openMapPlace('facility', facility)} aria-label={`${facility.name} 상세 보기`}><span>{facility.name}</span></button>
+                const size = (viewportSize.width <= 560 ? 11 : 15) / zoom
+                return <button key={facility.id} className={`facility-pin ${selected ? 'is-selected' : ''}`} type="button" style={{ left: point.x, top: point.y, width: size, height: size }} onClick={() => openMapPlace('facility', facility)} aria-label={`${facility.name} 상세 보기`}><span>{facility.name}</span></button>
               })}
             </div>
             <button className="map-info-button" type="button" onClick={() => setModal({ type: 'app-info' })} aria-label="성공회대학교 시설 가이드 앱 정보"><Info size={19} /></button>
@@ -509,8 +602,9 @@ function PlaceDetailModal({ modal, onClose }: { modal: PlaceModal; onClose: () =
   const imagePath = assetPath(`images/${placeKind === 'building' ? 'buildings' : 'facilities'}/${place.id}.webp`)
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <div className="modal-backdrop detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <div className="detail-modal" role="dialog" aria-modal="true" aria-label={`${place.name} 상세 정보`}>
+        <button className="mobile-detail-close" type="button" onClick={onClose} aria-label="상세 정보 닫기"><X size={20} /></button>
         <figure className="detail-image"><img src={imagePath} alt="" onError={(event) => event.currentTarget.parentElement?.classList.add('image-unavailable')} /><figcaption>이미지 없음</figcaption></figure>
         {building ? <BuildingDetail building={building} onClose={onClose} /> : <FacilityDetail facility={facility!} onClose={onClose} />}
       </div>
@@ -540,11 +634,16 @@ function BuildingDetail({ building, onClose }: { building: Building; onClose: ()
 
 function FacilityDetail({ facility, onClose }: { facility: Facility; onClose: () => void }) {
   const tips = facility.tips.filter((tip): tip is string => Boolean(tip?.trim()))
+  const [activeSection, setActiveSection] = useState<'info' | 'tips'>('info')
   return (
     <section className="legacy-panel facility-panel">
       <button className="modal-close" type="button" onClick={onClose} aria-label="상세 정보 닫기"><X size={19} /></button>
+      <div className="mobile-facility-tabs" role="tablist" aria-label="시설 상세 내용">
+        <button className={activeSection === 'info' ? 'is-active' : ''} type="button" role="tab" aria-selected={activeSection === 'info'} onClick={() => setActiveSection('info')}>시설 정보</button>
+        <button className={activeSection === 'tips' ? 'is-active' : ''} type="button" role="tab" aria-selected={activeSection === 'tips'} onClick={() => setActiveSection('tips')}>꿀팁</button>
+      </div>
       <div className="facility-layout">
-        <section className="facility-info-card">
+        <section className={`facility-info-card ${activeSection === 'info' ? 'is-active' : ''}`}>
           <span className="card-title">시설 정보</span>
           <h3>{facility.name}</h3>
           <p className="facility-building">건물: {facility.buildingName || '-'}</p>
@@ -556,7 +655,7 @@ function FacilityDetail({ facility, onClose }: { facility: Facility; onClose: ()
             <InfoBlock title="설명" content={facility.description || '설명 정보가 없습니다.'} large />
           </div>
         </section>
-        <section className="tips-card">
+        <section className={`tips-card ${activeSection === 'tips' ? 'is-active' : ''}`}>
           <h4><Lightbulb size={18} aria-hidden="true" /> 꿀팁</h4>
           <div className="legacy-scroll tips-scroll">
             {tips.length ? <ul>{tips.map((tip, index) => <li key={`${tip}-${index}`}>{tip}</li>)}</ul> : <p>등록된 꿀팁이 없습니다.</p>}
