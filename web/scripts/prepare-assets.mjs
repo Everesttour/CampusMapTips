@@ -10,7 +10,10 @@ const publicDirectory = join(webDirectory, 'public')
 
 async function webp(input, output, width) {
   await mkdir(dirname(output), { recursive: true })
-  await sharp(input)
+  const metadata = await sharp(input).metadata()
+  const shouldRotatePortrait = metadata.width && metadata.height && metadata.width > metadata.height
+  const image = shouldRotatePortrait ? sharp(input).rotate(90) : sharp(input).rotate()
+  await image
     .resize({ width, withoutEnlargement: true })
     .webp({ quality: 78, effort: 4 })
     .toFile(output)

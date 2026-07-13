@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Building2,
   ChevronRight,
@@ -44,6 +44,15 @@ type Place = Building | Facility
 type PlaceModal = { type: 'place'; placeKind: PlaceKind; place: Place }
 type Modal = PlaceModal | { type: 'app-info' } | null
 type Point = { x: number; y: number }
+type ViewportSize = { width: number; height: number }
+type Rect = { x: number; y: number; width: number; height: number }
+type ConnectorSide = 'right' | 'left' | 'bottom' | 'top'
+type BriefPopup = {
+  facility: Facility
+  bounds: Rect
+  connectorSide: ConnectorSide
+  connectorLength: number
+}
 
 const MAP_WIDTH = 1600
 const MAP_HEIGHT = 1125
@@ -87,6 +96,83 @@ function containsQuery(place: Place, query: string) {
   return fields.join(' ').toLocaleLowerCase('ko-KR').includes(normalized)
 }
 
+function screenPoint(place: Place, viewport: ViewportSize, zoom: number, pan: Point): Point {
+  return {
+    x: ((place.xLocation / MAP_WIDTH) - 0.5) * viewport.width * zoom + pan.x + (viewport.width / 2),
+    y: ((place.yLocation / MAP_HEIGHT) - 0.5) * viewport.height * zoom + pan.y + (viewport.height / 2),
+  }
+}
+
+function overlaps(first: Rect, second: Rect) {
+  return first.x < second.x + second.width && first.x + first.width > second.x && first.y < second.y + second.height && first.y + first.height > second.y
+}
+
+function containsPoint(rect: Rect, point: Point, padding = 0) {
+  return point.x >= rect.x - padding && point.x <= rect.x + rect.width + padding && point.y >= rect.y - padding && point.y <= rect.y + rect.height + padding
+}
+
+function layoutBriefPopups(facilities: Facility[], allPlaces: Place[], viewport: ViewportSize, zoom: number, pan: Point): BriefPopup[] {
+  if (viewport.width === 0 || viewport.height === 0) return []
+
+  const popupWidth = Math.min(190, Math.max(150, viewport.width * 0.32))
+  const popupHeight = 100
+  const points = allPlaces.map((place) => screenPoint(place, viewport, zoom, pan))
+  const visibleFacilities = facilities
+    .map((facility) => ({ facility, point: screenPoint(facility, viewport, zoom, pan) }))
+    .filter(({ point }) => point.x >= 0 && point.x <= viewport.width && point.y >= 0 && point.y <= viewport.height)
+    .sort((first, second) => {
+      const firstCenter = Math.abs(first.point.x - (viewport.width / 2)) <= viewport.width / 4 && Math.abs(first.point.y - (viewport.height / 2)) <= viewport.height / 4
+      const secondCenter = Math.abs(second.point.x - (viewport.width / 2)) <= viewport.width / 4 && Math.abs(second.point.y - (viewport.height / 2)) <= viewport.height / 4
+      if (firstCenter !== secondCenter) return firstCenter ? -1 : 1
+      return first.facility.id - second.facility.id
+    })
+    .slice(0, Math.min(facilities.length, Math.floor(zoom * 1.5) + 4))
+
+  const placed: BriefPopup[] = []
+
+  for (const { facility, point } of visibleFacilities) {
+    let selected: BriefPopup | null = null
+
+    for (let margin = 30; margin <= 300 && !selected; margin += 5) {
+      const diagonal = Math.round(margin / Math.sqrt(2))
+      const candidates: Rect[] = [
+        { x: point.x + margin, y: point.y - (popupHeight / 2), width: popupWidth, height: popupHeight },
+        { x: point.x - margin - popupWidth, y: point.y - (popupHeight / 2), width: popupWidth, height: popupHeight },
+        { x: point.x - (popupWidth / 2), y: point.y + margin, width: popupWidth, height: popupHeight },
+        { x: point.x - (popupWidth / 2), y: point.y - margin - popupHeight, width: popupWidth, height: popupHeight },
+        { x: point.x + diagonal, y: point.y + diagonal, width: popupWidth, height: popupHeight },
+        { x: point.x - diagonal - popupWidth, y: point.y + diagonal, width: popupWidth, height: popupHeight },
+        { x: point.x + diagonal, y: point.y - diagonal - popupHeight, width: popupWidth, height: popupHeight },
+        { x: point.x - diagonal - popupWidth, y: point.y - diagonal - popupHeight, width: popupWidth, height: popupHeight },
+      ]
+
+      for (const bounds of candidates) {
+        const insideViewport = bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height
+        const overlapsPin = points.some((pin) => containsPoint(bounds, pin, 8))
+        const overlapsPopup = placed.some((popup) => overlaps(bounds, popup.bounds))
+        if (!insideViewport || overlapsPin || overlapsPopup) continue
+
+        const center = { x: bounds.x + (bounds.width / 2), y: bounds.y + (bounds.height / 2) }
+        let connectorSide: ConnectorSide
+        let connectorLength: number
+        if (Math.abs(center.x - point.x) > Math.abs(center.y - point.y)) {
+          connectorSide = center.x > point.x ? 'right' : 'left'
+          connectorLength = connectorSide === 'right' ? bounds.x - point.x - 8 : point.x - (bounds.x + bounds.width) - 8
+        } else {
+          connectorSide = center.y > point.y ? 'bottom' : 'top'
+          connectorLength = connectorSide === 'bottom' ? bounds.y - point.y - 8 : point.y - (bounds.y + bounds.height) - 8
+        }
+        selected = { facility, bounds, connectorSide, connectorLength: Math.max(8, connectorLength) }
+        break
+      }
+    }
+
+    if (selected) placed.push(selected)
+  }
+
+  return placed
+}
+
 function App() {
   const [buildings, setBuildings] = useState<Building[]>([])
   const [facilities, setFacilities] = useState<Facility[]>([])
@@ -95,10 +181,12 @@ function App() {
   const [modal, setModal] = useState<Modal>(null)
   const [zoom, setZoom] = useState(MIN_ZOOM)
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 })
+  const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [loadError, setLoadError] = useState('')
   const viewportRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ pointerId: number; clientX: number; clientY: number; pan: Point } | null>(null)
+  const zoomRef = useRef(MIN_ZOOM)
 
   useEffect(() => {
     Promise.all([loadJson<Building[]>('data/buildings.json'), loadJson<Facility[]>('data/facilities.json')])
@@ -107,6 +195,16 @@ function App() {
         setFacilities(facilityData.sort((a, b) => a.id - b.id))
       })
       .catch((error: unknown) => setLoadError(error instanceof Error ? error.message : '안내 데이터를 불러오지 못했습니다.'))
+  }, [])
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const updateViewportSize = () => setViewportSize({ width: viewport.clientWidth, height: viewport.clientHeight })
+    const observer = new ResizeObserver(updateViewportSize)
+    observer.observe(viewport)
+    updateViewportSize()
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
@@ -129,16 +227,32 @@ function App() {
   }, [])
 
   const zoomAt = useCallback((nextZoom: number, focus: Point = { x: 0, y: 0 }) => {
+    const currentZoom = zoomRef.current
     const boundedZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom))
     setPan((currentPan) => {
       const nextPan = {
-        x: focus.x - ((focus.x - currentPan.x) / zoom) * boundedZoom,
-        y: focus.y - ((focus.y - currentPan.y) / zoom) * boundedZoom,
+        x: focus.x - ((focus.x - currentPan.x) / currentZoom) * boundedZoom,
+        y: focus.y - ((focus.y - currentPan.y) / currentZoom) * boundedZoom,
       }
       return clampPan(nextPan, boundedZoom)
     })
+    zoomRef.current = boundedZoom
     setZoom(boundedZoom)
-  }, [clampPan, zoom])
+  }, [clampPan])
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const bounds = viewport.getBoundingClientRect()
+      const focus = { x: event.clientX - bounds.left - (bounds.width / 2), y: event.clientY - bounds.top - (bounds.height / 2) }
+      zoomAt(zoomRef.current * (event.deltaY < 0 ? 1.18 : 1 / 1.18), focus)
+    }
+    viewport.addEventListener('wheel', handleWheel, { passive: false })
+    return () => viewport.removeEventListener('wheel', handleWheel)
+  }, [zoomAt])
 
   const focusOn = useCallback((place: Place) => {
     const bounds = viewportRef.current?.getBoundingClientRect()
@@ -150,6 +264,7 @@ function App() {
       }
       setPan(clampPan({ x: -coordinate.x * targetZoom, y: -coordinate.y * targetZoom }, targetZoom))
     }
+    zoomRef.current = targetZoom
     setZoom(targetZoom)
   }, [clampPan])
 
@@ -163,18 +278,11 @@ function App() {
     setModal(null)
     if (kind === 'building') {
       setPan({ x: 0, y: 0 })
+      zoomRef.current = MIN_ZOOM
       setZoom(MIN_ZOOM)
     } else {
       zoomAt(FACILITY_ZOOM_THRESHOLD)
     }
-  }
-
-  const onMapWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const focus = { x: event.clientX - bounds.left - (bounds.width / 2), y: event.clientY - bounds.top - (bounds.height / 2) }
-    const multiplier = event.deltaY < 0 ? 1.18 : 1 / 1.18
-    zoomAt(zoom * multiplier, focus)
   }
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -204,6 +312,9 @@ function App() {
 
   const activePlace = modal?.type === 'place' ? modal : null
   const showFacilities = zoom >= FACILITY_ZOOM_THRESHOLD
+  const briefPopups = useMemo(() => showFacilities
+    ? layoutBriefPopups(facilities, [...buildings, ...facilities], viewportSize, zoom, pan)
+    : [], [buildings, facilities, pan, showFacilities, viewportSize, zoom])
   const isLoading = !loadError && buildings.length === 0 && facilities.length === 0
 
   if (isLoading) return <main className="loading-screen">캠퍼스 지도를 준비하고 있습니다.</main>
@@ -274,7 +385,6 @@ function App() {
           <div
             className={`map-viewport ${isDragging ? 'is-dragging' : ''}`}
             ref={viewportRef}
-            onWheel={onMapWheel}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endPointerDrag}
@@ -291,6 +401,27 @@ function App() {
                 return <button key={facility.id} className={`facility-pin ${selected ? 'is-selected' : ''}`} type="button" style={{ left: `${(facility.xLocation / MAP_WIDTH) * 100}%`, top: `${(facility.yLocation / MAP_HEIGHT) * 100}%` }} onClick={() => openPlace('facility', facility, false)} aria-label={`${facility.name} 상세 보기`}><span>{facility.name}</span></button>
               })}
             </div>
+            {briefPopups.map((popup) => (
+              <button
+                className={`brief-popup link-${popup.connectorSide}`}
+                type="button"
+                key={popup.facility.id}
+                style={{
+                  left: popup.bounds.x,
+                  top: popup.bounds.y,
+                  width: popup.bounds.width,
+                  '--connector-length': `${popup.connectorLength}px`,
+                } as CSSProperties}
+                onClick={() => openPlace('facility', popup.facility, false)}
+                aria-label={`${popup.facility.name} 간략 정보 및 상세 보기`}
+              >
+                <span className="brief-title"><b>{popup.facility.id}</b><strong>{popup.facility.name}</strong></span>
+                <span className="brief-location">📍 {popup.facility.buildingName} {popup.facility.floor > 0 ? `${popup.facility.floor}층` : popup.facility.floor < 0 ? `B${Math.abs(popup.facility.floor)}` : ''}</span>
+                <span className="brief-overview">{popup.facility.overview || '-'}</span>
+                <span className="brief-notice">📢 {popup.facility.notice || '-'}</span>
+                <em>Detail &gt;</em>
+              </button>
+            ))}
           </div>
           <div className="map-legend"><span><i className="building-dot" /> 건물 번호</span><span><i className="facility-dot" /> 시설 핀</span></div>
           <p className="map-guide"><Grip size={15} aria-hidden="true" /> 드래그로 이동 <span>·</span> <MousePointer2 size={15} aria-hidden="true" /> 휠로 확대</p>
