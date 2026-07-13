@@ -206,7 +206,7 @@ function App() {
     observer.observe(viewport)
     updateViewportSize()
     return () => observer.disconnect()
-  }, [])
+  }, [buildings.length, facilities.length])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -253,7 +253,7 @@ function App() {
     }
     viewport.addEventListener('wheel', handleWheel, { passive: false })
     return () => viewport.removeEventListener('wheel', handleWheel)
-  }, [zoomAt])
+  }, [zoomAt, buildings.length, facilities.length])
 
   const focusOn = useCallback((place: Place) => {
     const bounds = viewportRef.current?.getBoundingClientRect()
